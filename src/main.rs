@@ -2,7 +2,7 @@ mod vm;
 use vm::vm::{Constant, VM, Process};
 
 macro_rules! vm_process {
-    ([$($constant:expr),*]) => {{
+    ($($constant:expr),*) => {{
         let mut c = Vec::new();
         $(
             c.push($constant);
@@ -31,7 +31,7 @@ macro_rules! inst {
 
 
 fn main() {
-    let vm = vm_process!([Constant::Int(10), Constant::Int(10)]);
+    let vm = vm_process!(Constant::Int(10), Constant::Int(10));
     let mut proc = new_proc!(vm);
     inst!(proc load 0);
     inst!(proc dump);
