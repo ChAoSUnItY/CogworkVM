@@ -33,6 +33,7 @@ use std::any::Any;
 /// | Opcode name   | Opcode index  | Followed bytes    | Description |
 /// |---------------|---------------|-------------------|-------------|
 /// | load          | 0x00          | u8, u8, u8, u8    | Loads a constant from constant pool |
+/// | dump          | 0x01          |                   | Pop and print out top item from stack |
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>
 }
@@ -129,6 +130,10 @@ impl<'a> InstructionBuilder<'a> {
     pub fn visit_load(&mut self, index: i32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+    }
+
+    pub fn visit_dump(&mut self) {
+        self.byte_pool.push(0x01);
     }
 
     pub fn visit_end(mut self) {
