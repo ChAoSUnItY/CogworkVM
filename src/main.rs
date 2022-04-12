@@ -29,7 +29,7 @@ macro_rules! inst {
 
 
 fn main() {
-    let mut vm = Rc::new(new_vm!(Stackable::Int(10), Stackable::Long(12)));
+    let mut vm = Rc::new(new_vm!(Stackable::Int(10), Stackable::Double(12.)));
     let mut proc = Process::new_process(vm);
     inst!(proc load 0);
     inst!(proc load 1);

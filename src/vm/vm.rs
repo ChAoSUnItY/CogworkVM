@@ -5,16 +5,14 @@ macro_rules! make_stackable {
         match $precedence {
             0 => Stackable::Int($expr as i32),
             1 => Stackable::Long($expr as i64),
-            _ => unreachable!()
+            2 => Stackable::Float($expr as f32),
+            3 => Stackable::Double($expr as f64),
+            _ => unreachable!(),
         }
     };
 
     ($precedence:expr, $expr1:expr, $expr2:expr) => {
-        match $precedence {
-            0 => (Stackable::Int($expr1 as i32), Stackable::Int($expr2 as i32), $precedence),
-            1 => (Stackable::Long($expr1 as i64), Stackable::Long($expr2 as i64), $precedence),
-            _ => unreachable!()
-        }
+        (make_stackable!($precedence, $expr1), make_stackable!($precedence, $expr2), $precedence)
     };
 }
 
@@ -23,6 +21,8 @@ macro_rules! get_value {
         match $expr {
             Stackable::Int(i) => i as f64,
             Stackable::Long(l) => l as f64,
+            Stackable::Float(f) => f as f64,
+            Stackable::Double(d) => d,
         }
     };
 }
@@ -31,6 +31,8 @@ macro_rules! get_value {
 pub enum Stackable {
     Int(i32),
     Long(i64),
+    Float(f32),
+    Double(f64),
 }
 
 impl Stackable {
@@ -38,6 +40,8 @@ impl Stackable {
         match self {
             Self::Int(_) => 0,
             Self::Long(_) => 1,
+            Self::Float(_) => 2,
+            Self::Double(_) => 3,
         }
     }
 
@@ -58,7 +62,9 @@ impl Debug for Stackable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Int(i) => f.write_fmt(format_args!("{}\n", i)),
-            Self::Long(l) => f.write_fmt(format_args!("{}\n", l)),
+            Self::Long(l) => f.write_fmt(format_args!("{}L\n", l)),
+            Self::Float(fl) => f.write_fmt(format_args!("{}F\n", fl)),
+            Self::Double(d) => f.write_fmt(format_args!("{}D\n", d)),
         }
     }
 }
