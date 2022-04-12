@@ -1,5 +1,7 @@
 use std::any::Any;
 
+use super::opcode::Opcode;
+
 /// # Format summary: </br>
 /// 
 /// ## Overview: </br>
@@ -132,8 +134,11 @@ impl<'a> InstructionBuilder<'a> {
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
     }
 
-    pub fn visit_dump(&mut self) {
-        self.byte_pool.push(0x01);
+    pub fn visit_opcode(&mut self, opcode: Opcode) {
+        match opcode {
+            Opcode::Load(index) => self.visit_load(index),
+            Opcode::Dump => self.byte_pool.push(0x02),
+        }
     }
 
     pub fn visit_end(mut self) {

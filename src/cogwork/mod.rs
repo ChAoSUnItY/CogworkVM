@@ -1,2 +1,3 @@
 pub mod bytecode;
-pub(crate) mod vm;
+pub mod opcode;
+pub mod vm;
