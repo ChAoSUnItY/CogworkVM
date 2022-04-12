@@ -16,6 +16,9 @@ macro_rules! inst {
     ($id:ident load $index:expr) => {
         $id.load($index);
     };
+    ($id:ident add) => {
+        $id.add();
+    };
     ($id:ident dump) => {
         $id.dump();
     };
@@ -26,9 +29,11 @@ macro_rules! inst {
 
 
 fn main() {
-    let mut vm = Rc::new(new_vm!(Stackable::Int(10), Stackable::Int(12)));
+    let mut vm = Rc::new(new_vm!(Stackable::Int(10), Stackable::Long(12)));
     let mut proc = Process::new_process(vm);
     inst!(proc load 0);
+    inst!(proc load 1);
+    inst!(proc add);
     inst!(proc dump);
 }
 
