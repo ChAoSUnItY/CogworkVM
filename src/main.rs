@@ -1,6 +1,8 @@
-mod vm;
+mod cogwork;
 use std::rc::Rc;
-use vm::vm::{Stackable, VM, Process};
+use cogwork::{vm::{Stackable, VM, Process}, bytecode::BytecodeBuilder};
+
+use crate::cogwork::bytecode::ConstantBuilder;
 
 macro_rules! new_vm {
     ($($constant:expr),*) => {{
@@ -35,5 +37,15 @@ fn main() {
     inst!(proc load 1);
     inst!(proc add);
     inst!(proc dump);
+
+    let mut bytecode_builder = BytecodeBuilder::new();
+    let mut constant_builder = bytecode_builder.visit_constant_pool();
+    
+    constant_builder.visit_integer(10);
+
+    constant_builder.visit_end();
+    let bytecode = bytecode_builder.visit_end();
+
+    println!("{:?}", bytecode);
 }
 
