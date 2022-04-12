@@ -24,7 +24,7 @@ pub struct VM {
     constants: Vec<Stackable>,
 }
 
-impl<'a> VM {
+impl VM {
     pub fn new_vm(constants: Vec<Stackable>) -> Self {
         VM{
             constants,
