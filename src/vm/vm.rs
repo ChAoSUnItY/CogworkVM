@@ -1,50 +1,14 @@
-use std::{vec, fmt::Debug, collections::HashMap, borrow::BorrowMut, rc::Rc};
-
-#[derive(Debug, Clone, Copy)]
-pub enum Constant {
-    Int(i32),
-    Long(i64),
-    Float(f32),
-    Double(f64),
-}
-
-impl From<StackItem> for Constant {
-    fn from(item: StackItem) -> Self {
-        match item {
-            StackItem::Int(i) => Constant::Int(i),
-            StackItem::Long(l) => Constant::Long(l),
-            StackItem::Float(f) => Constant::Float(f),
-            StackItem::Double(d) => Constant::Double(d),
-        }
-    }
-}
-
-impl Into<StackItem> for Constant {
-    fn into(self) -> StackItem {
-        match self {
-            Constant::Int(i) => StackItem::Int(i),
-            Constant::Long(l) => StackItem::Long(l),
-            Constant::Float(f) => StackItem::Float(f),
-            Constant::Double(d) => StackItem::Double(d),
-        }
-    }
-}
+use std::{vec, fmt::Debug, collections::HashMap, rc::Rc};
 
 #[derive(Clone, Copy)]
-pub enum StackItem {
+pub enum Stackable {
     Int(i32),
-    Long(i64),
-    Float(f32),
-    Double(f64),
 }
 
-impl Debug for StackItem {
+impl Debug for Stackable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Int(arg0) => f.write_str(&arg0.to_string()),
-            Self::Long(arg0) => f.write_str(&arg0.to_string()),
-            Self::Float(arg0) => f.write_str(&arg0.to_string()),
-            Self::Double(arg0) => f.write_str(&arg0.to_string()),
+            Self::Int(i) => f.write_fmt(format_args!("{}\n", i)),
         }
     }
 }
@@ -56,29 +20,27 @@ pub struct FunctionSignature {
 }
 
 #[derive(Clone)]
-pub struct VM<'a> {
-    constants: Vec<Constant>,
-    process: Option<Process<'a>>
+pub struct VM {
+    constants: Vec<Stackable>,
 }
 
-impl<'a> VM<'a> {
-    pub fn new_vm(constants: Vec<Constant>) -> Self {
+impl<'a> VM {
+    pub fn new_vm(constants: Vec<Stackable>) -> Self {
         VM{
             constants,
-            process: None,
         }
     }
 }
 
 #[derive(Clone)]
-pub struct Process<'a> {
-    vm: &'a VM<'a>,
-    functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<StackItem>>>, // local functions
-    stack: Vec<StackItem>
+pub struct Process {
+    vm: Rc<VM>,
+    functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<Stackable>>>, // local functions
+    stack: Vec<Stackable>
 }
 
-impl<'a> Process<'a> {
-    pub fn new_process(vm: &'a VM) -> Self {
+impl Process {
+    pub fn new_process(vm: Rc<VM>) -> Self {
         Process{
             vm,
             functions: HashMap::new(),
@@ -90,12 +52,23 @@ impl<'a> Process<'a> {
         let constant = self.vm.constants.get(index);
 
         if let Some(c) = constant {
-            self.stack.push(c.clone().into());
+            self.stack.push(c.clone());
         } else {
             panic!("Unable to load constant at index {}", index);
         }
 
-        return self;
+        self
+    }
+
+    pub fn add(&mut self) -> &mut Self {
+        if self.stack.len() < 2 {
+            panic!("Unable to perform addition, requires 2+ items on stack but got {}", self.stack.len());
+        }
+
+        let right = self.stack.pop().unwrap();
+        let left = self.stack.pop().unwrap();
+
+        self
     }
 
     pub fn dump(&mut self) -> &mut Self {
@@ -110,7 +83,7 @@ impl<'a> Process<'a> {
         return self;
     }
 
-    pub fn r#return(&mut self) -> Option<StackItem> {
+    pub fn r#return(&mut self) -> Option<Stackable> {
         return self.stack.pop();
     }
 }

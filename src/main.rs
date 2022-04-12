@@ -1,20 +1,15 @@
 mod vm;
-use vm::vm::{Constant, VM, Process};
+use std::rc::Rc;
+use vm::vm::{Stackable, VM, Process};
 
-macro_rules! vm_process {
+macro_rules! new_vm {
     ($($constant:expr),*) => {{
-        let mut c = Vec::new();
+        let mut c = Vec::<Stackable>::new();
         $(
             c.push($constant);
         )*
         VM::new_vm(c)
     }};
-}
-
-macro_rules! new_proc {
-    ($vm_id:ident) => {
-        Process::new_process(&$vm_id)
-    };
 }
 
 macro_rules! inst {
@@ -31,8 +26,8 @@ macro_rules! inst {
 
 
 fn main() {
-    let vm = vm_process!(Constant::Int(10), Constant::Int(10));
-    let mut proc = new_proc!(vm);
+    let mut vm = Rc::new(new_vm!(Stackable::Int(10), Stackable::Int(12)));
+    let mut proc = Process::new_process(vm);
     inst!(proc load 0);
     inst!(proc dump);
 }
