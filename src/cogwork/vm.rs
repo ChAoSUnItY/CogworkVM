@@ -1,4 +1,4 @@
-use std::{vec, fmt::Debug, collections::HashMap, rc::Rc};
+use std::{vec, fmt::{Debug, Write}, collections::HashMap, rc::Rc};
 
 macro_rules! make_stackable {
     ($precedence:expr, $expr:expr) => {
@@ -23,25 +23,28 @@ macro_rules! get_value {
             Stackable::Long(l) => l as f64,
             Stackable::Float(f) => f as f64,
             Stackable::Double(d) => d,
+            Stackable::String(_) => unreachable!(),
         }
     };
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum Stackable {
     Int(i32),
     Long(i64),
     Float(f32),
     Double(f64),
+    String(String),
 }
 
 impl Stackable {
-    pub(crate) fn promotion_precedence(self) -> i8 {
+    pub(crate) fn promotion_precedence(&self) -> i8 {
         match self {
             Self::Int(_) => 0,
             Self::Long(_) => 1,
             Self::Float(_) => 2,
             Self::Double(_) => 3,
+            Self::String(_) => panic!("String cannot be promoted.")
         }
     }
 
@@ -61,10 +64,11 @@ impl Stackable {
 impl Debug for Stackable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Int(i) => f.write_fmt(format_args!("{}\n", i)),
-            Self::Long(l) => f.write_fmt(format_args!("{}L\n", l)),
-            Self::Float(fl) => f.write_fmt(format_args!("{}F\n", fl)),
-            Self::Double(d) => f.write_fmt(format_args!("{}D\n", d)),
+            Self::Int(i) => f.write_fmt(format_args!("{}", i)),
+            Self::Long(l) => f.write_fmt(format_args!("{}L", l)),
+            Self::Float(fl) => f.write_fmt(format_args!("{}F", fl)),
+            Self::Double(d) => f.write_fmt(format_args!("{}D", d)),
+            Self::String(s) => f.write_str(s),
         }
     }
 }

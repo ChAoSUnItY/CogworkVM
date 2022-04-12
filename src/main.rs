@@ -39,10 +39,7 @@ fn main() {
     let mut bytecode_builder = BytecodeBuilder::new();
     let mut constant_builder = bytecode_builder.visit_constant_pool();
     
-    constant_builder.visit_constant(&10);
-    constant_builder.visit_constant(&20i64);
-    constant_builder.visit_constant(&1.1f32);
-    constant_builder.visit_constant(&1.2f64);
+    constant_builder.visit_constant(&"kek");
 
     constant_builder.visit_end();
     let bytecode = bytecode_builder.visit_end();

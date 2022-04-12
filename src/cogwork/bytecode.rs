@@ -1,23 +1,25 @@
 use std::any::Any;
 
-/// Format summary:
+/// Format summary: </br>
 /// 
-/// Overview:
-/// Header - Constant Pool - Code
+/// Overview: </br>
+/// Header - Constant Pool - Code </br>
 /// 
-/// Header:
-/// \[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B\]  <-- Magic number: `GEARWORK`
+/// Header: </br>
+/// \[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B\]  <-- Magic number: `GEARWORK` </br>
 /// 
-/// Constant Pool:
-/// \[\[u8; 4\], \[u8; cp_size\]\] <-- First 4 bytes indicates how many constants
-///                                    cp_size: Size of constant pool, based on constant entries
+/// Constant Pool: </br>
+/// \[\[u8; 4\], \[u8; cp_size\]\] <-- First 4 bytes indicates how many constants </br>
+///                                    cp_size: Size of constant pool, based on constant entries </br>
 /// 
-/// Available Constant Formats:
-/// \[0x00, \[u8; 4\]\] <-- Integer constant
-/// \[0x01, \[u8; 8\]\] <-- Long constant
-/// \[0x02, \[u8; 4\]\] <-- Float constant
-/// \[0x03, \[u8; 8\]\] <-- Double constant
-/// 
+/// Available Constant Formats: </br>
+/// \[0x00, \[u8; 4\]\] <-- Integer constant </br>
+/// \[0x01, \[u8; 8\]\] <-- Long constant </br>
+/// \[0x02, \[u8; 4\]\] <-- Float constant </br>
+/// \[0x03, \[u8; 8\]\] <-- Double constant </br>
+/// \[0x04, \[u8; usize\], \[u8; s_size\]\] <-- String constant, bytes at [1..4]/[1..8] indicates string bytes' len </br>
+///                                             usize:  32-bits will be 4, 64-bits will be 8 </br>
+///                                             s_size: Size of string bytes </br>
 /// 
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>
@@ -68,6 +70,14 @@ impl<'a> ConstantBuilder<'a> {
         self.byte_pool.extend_from_slice(&double.to_be_bytes());
     }
 
+    pub fn visit_string(&mut self, string: String) {
+        let string_bytes = string.as_bytes();
+
+        self.byte_pool.push(0x04);
+        self.byte_pool.extend_from_slice(&string_bytes.len().to_be_bytes());
+        self.byte_pool.extend_from_slice(&string_bytes);
+    }
+
     pub fn visit_constant(&mut self, value: &dyn Any) {
         if let Some(int) = value.downcast_ref::<i32>() {
             self.visit_integer(*int);
@@ -77,6 +87,8 @@ impl<'a> ConstantBuilder<'a> {
             self.visit_float(*float);
         } else if let Some(double) = value.downcast_ref::<f64>() {
             self.visit_double(*double);
+        } else if let Some(string) = value.downcast_ref::<&str>() {
+            self.visit_string(string.to_string());
         } else {
             panic!("Unexpected constant value. Constant value can only be i32, i64, f32, or f64");
         }
