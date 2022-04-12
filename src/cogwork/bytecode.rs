@@ -89,6 +89,8 @@ impl<'a> ConstantBuilder<'a> {
             self.visit_double(*double);
         } else if let Some(string) = value.downcast_ref::<&str>() {
             self.visit_string(string.to_string());
+        } else if let Some(string) = value.downcast_ref::<String>() {
+            self.visit_string(string.clone());
         } else {
             panic!("Unexpected constant value. Constant value can only be i32, i64, f32, or f64");
         }
