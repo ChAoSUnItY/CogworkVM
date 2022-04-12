@@ -1,6 +1,5 @@
-mod cogwork;
 use std::rc::Rc;
-use cogwork::{vm::{Stackable, VM, Process}, bytecode::BytecodeBuilder};
+use cogwork::{vm::*, bytecode::*};
 
 macro_rules! new_vm {
     ($($constant:expr),*) => {{
