@@ -1,18 +1,18 @@
 use std::any::Any;
 
-/// Format summary: </br>
+/// # Format summary: </br>
 /// 
-/// Overview: </br>
+/// ## Overview: </br>
 /// Header - Constant Pool - Code </br>
 /// 
-/// Header: </br>
+/// ## Header: </br>
 /// \[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B\]  <-- Magic number: `GEARWORK` </br>
 /// 
-/// Constant Pool: </br>
+/// ## Constant Pool: </br>
 /// \[\[u8; 4\], \[u8; cp_size\]\] <-- First 4 bytes indicates how many constants </br>
 ///                                    cp_size: Size of constant pool, based on constant entries </br>
 /// 
-/// Available Constant Formats: </br>
+/// ### Available Constant Formats: </br>
 /// \[0x00, \[u8; 4\]\] <-- Integer constant </br>
 /// \[0x01, \[u8; 8\]\] <-- Long constant </br>
 /// \[0x02, \[u8; 4\]\] <-- Float constant </br>
@@ -21,6 +21,18 @@ use std::any::Any;
 ///                                             usize:  32-bits will be 4, 64-bits will be 8 </br>
 ///                                             s_size: Size of string bytes </br>
 /// 
+/// ## Code: </br>
+/// \[\[u8; 4\], \[u8; c_size\]\] <-- First 4 bytes indicates max stack size (User needs to compute it) </br>
+///                                   c_size: Size of instructions </br>
+/// 
+/// ## Instructions: </br>
+/// \[opcode, \[u8; f_size\]\] <-- Instruction, as known as opcode, followed bytes size is based on instruction </br>
+///                                f_size: Size of followed bytes, based on instruction </br>
+/// 
+/// ## Instruction Set: </br>
+/// | Opcode name   | Opcode index  | Followed bytes    | Description |
+/// |---------------|---------------|-------------------|-------------|
+/// | load          | 0x00          | u8, u8, u8, u8    | Loads a constant from constant pool |
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>
 }
@@ -34,6 +46,13 @@ impl BytecodeBuilder {
 
     pub fn visit_constant_pool<'a>(&mut self) -> ConstantBuilder {
         ConstantBuilder{
+            parent_builder: self,
+            byte_pool: vec![],
+        }
+    }
+
+    pub fn visit_code<'a>(&mut self) -> InstructionBuilder {
+        InstructionBuilder{
             parent_builder: self,
             byte_pool: vec![],
         }
@@ -98,5 +117,17 @@ impl<'a> ConstantBuilder<'a> {
 
     pub fn visit_end(mut self) {
         self.parent_builder.byte_pool.append(&mut self.byte_pool);
+    }
+}
+
+pub struct InstructionBuilder<'a> {
+    parent_builder: &'a BytecodeBuilder,
+    byte_pool: Vec<u8>,
+}
+
+impl<'a> InstructionBuilder<'a> {
+    pub fn visit_load(&mut self, index: i32) {
+        self.byte_pool.push(0x00);
+        self.byte_pool.extend_from_slice(&index.to_be_bytes());
     }
 }
