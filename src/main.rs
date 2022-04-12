@@ -2,8 +2,6 @@ mod cogwork;
 use std::rc::Rc;
 use cogwork::{vm::{Stackable, VM, Process}, bytecode::BytecodeBuilder};
 
-use crate::cogwork::bytecode::ConstantBuilder;
-
 macro_rules! new_vm {
     ($($constant:expr),*) => {{
         let mut c = Vec::<Stackable>::new();
@@ -42,6 +40,9 @@ fn main() {
     let mut constant_builder = bytecode_builder.visit_constant_pool();
     
     constant_builder.visit_constant(&10);
+    constant_builder.visit_constant(&20i64);
+    constant_builder.visit_constant(&1.1f32);
+    constant_builder.visit_constant(&1.2f64);
 
     constant_builder.visit_end();
     let bytecode = bytecode_builder.visit_end();

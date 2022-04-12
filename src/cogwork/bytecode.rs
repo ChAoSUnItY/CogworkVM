@@ -1,15 +1,24 @@
-use std::{any::Any, fmt::Debug};
+use std::any::Any;
 
 /// Format summary:
+/// 
+/// Overview:
+/// Header - Constant Pool - Code
 /// 
 /// Header:
 /// \[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B\]  <-- Magic number: `GEARWORK`
 /// 
 /// Constant Pool:
-/// \[u8; cp_size\] <-- cp_size: Size of constant pool, based on constant entries
+/// \[\[u8; 4\], \[u8; cp_size\]\] <-- First 4 bytes indicates how many constants
+///                                    cp_size: Size of constant pool, based on constant entries
 /// 
 /// Available Constant Formats:
-/// \[0x00, \[u8; 4\]\] <-- Integer constants
+/// \[0x00, \[u8; 4\]\] <-- Integer constant
+/// \[0x01, \[u8; 8\]\] <-- Long constant
+/// \[0x02, \[u8; 4\]\] <-- Float constant
+/// \[0x03, \[u8; 8\]\] <-- Double constant
+/// 
+/// 
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>
 }
