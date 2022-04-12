@@ -44,14 +44,14 @@ impl BytecodeBuilder {
         }
     }
 
-    pub fn visit_constant_pool<'a>(&mut self) -> ConstantBuilder {
+    pub fn visit_constant_pool(&mut self) -> ConstantBuilder {
         ConstantBuilder{
             parent_builder: self,
             byte_pool: vec![],
         }
     }
 
-    pub fn visit_code<'a>(&mut self) -> InstructionBuilder {
+    pub fn visit_code(&mut self) -> InstructionBuilder {
         InstructionBuilder{
             parent_builder: self,
             byte_pool: vec![],
@@ -121,7 +121,7 @@ impl<'a> ConstantBuilder<'a> {
 }
 
 pub struct InstructionBuilder<'a> {
-    parent_builder: &'a BytecodeBuilder,
+    parent_builder: &'a mut BytecodeBuilder,
     byte_pool: Vec<u8>,
 }
 
@@ -129,5 +129,9 @@ impl<'a> InstructionBuilder<'a> {
     pub fn visit_load(&mut self, index: i32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+    }
+
+    pub fn visit_end(mut self) {
+        self.parent_builder.byte_pool.append(&mut self.byte_pool);
     }
 }

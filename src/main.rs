@@ -43,7 +43,5 @@ fn main() {
 
     constant_builder.visit_end();
     let bytecode = bytecode_builder.visit_end();
-
-    println!("{:?}", bytecode);
 }
 
