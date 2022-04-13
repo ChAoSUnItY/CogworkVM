@@ -23,8 +23,9 @@ use super::opcode::Opcode;
 ///                                         s_size: Size of string bytes </br>
 /// 
 /// ## Code: </br>
-/// \[\[u8; 4\], \[u8; c_size\]\] <-- First 4 bytes indicates max stack size (User needs to compute it) </br>
-///                                   c_size: Size of instructions </br>
+/// \[\[u8; 2\], \[u8; 2\], \[u8; c_size\]\] <-- First 2 bytes indicates max stack size, </br>
+///                                              the latter 2 bytes indicates max local variable size. </br>
+///                                              c_size: Size of instructions </br>
 /// 
 /// ## Instructions: </br>
 /// \[opcode, \[u8; f_size\]\] <-- Instruction, as known as opcode, followed bytes size is based on instruction </br>
@@ -58,6 +59,8 @@ impl BytecodeBuilder {
         InstructionBuilder{
             parent_builder: self,
             byte_pool: vec![],
+            max_stack: 0,
+            max_local: 0,
         }
     }
 
@@ -132,6 +135,8 @@ impl<'a> ConstantBuilder<'a> {
 
 pub struct InstructionBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
+    max_stack: u16,
+    max_local: u16,
     byte_pool: Vec<u8>,
 }
 
@@ -146,6 +151,11 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Load(index) => self.visit_load(index),
             Opcode::Dump => self.byte_pool.push(0x02),
         }
+    }
+
+    pub fn visit_max(&mut self, max_stack: u16, max_local: u16) {
+        self.max_stack = max_stack;
+        self.max_local = max_local;
     }
 
     pub fn visit_end(mut self) {
