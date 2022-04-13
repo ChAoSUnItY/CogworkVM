@@ -154,6 +154,13 @@ impl Process {
                 Opcode::Dump => {
                     self.dump();
                 }
+                Opcode::Add => {
+                    self.add();
+                }
+                Opcode::Sub => todo!(),
+                Opcode::Mul => todo!(),
+                Opcode::Div => todo!(),
+                Opcode::Mod => todo!(),
             }
 
             self.pos += 1;

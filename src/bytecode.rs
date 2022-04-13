@@ -157,10 +157,20 @@ impl<'a> InstructionBuilder<'a> {
         self.count += 1;
     }
 
+    pub fn visit_add(&mut self) {
+        self.byte_pool.push(0x02);
+        self.count += 1;
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Load(index) => self.visit_load(index),
             Opcode::Dump => self.visit_dump(),
+            Opcode::Add => self.visit_add(),
+            Opcode::Sub => todo!(),
+            Opcode::Mul => todo!(),
+            Opcode::Div => todo!(),
+            Opcode::Mod => todo!(),
         }
     }
 

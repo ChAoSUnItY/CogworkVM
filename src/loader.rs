@@ -134,6 +134,10 @@ impl<'a> Loader<'a> {
                     // dump
                     instructions.push(Opcode::Dump);
                 }
+                0x02 => {
+                    // add
+                    instructions.push(Opcode::Add);
+                }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
         }
