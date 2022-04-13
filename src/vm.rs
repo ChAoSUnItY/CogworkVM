@@ -1,5 +1,9 @@
 use std::{vec, fmt::{Debug, Write}, collections::HashMap, rc::Rc};
 
+use arrayvec::ArrayVec;
+
+use crate::opcode::Opcode;
+
 macro_rules! make_stackable {
     ($precedence:expr, $expr:expr) => {
         match $precedence {
@@ -79,15 +83,30 @@ pub struct FunctionSignature {
     return_type: String,
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct VM {
     constants: Vec<Stackable>,
+    code: Code,
 }
 
 impl VM {
-    pub fn new_vm(constants: Vec<Stackable>) -> Self {
+    pub fn new_vm(constants: Vec<Stackable>, code: Code) -> Self {
         VM{
             constants,
+            code
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Code {
+    instructions: Vec<Opcode>
+}
+
+impl Code {
+    pub fn new(instructions: Vec<Opcode>) -> Self {
+        Self{
+            instructions
         }
     }
 }
@@ -101,7 +120,7 @@ pub struct Process {
 
 impl Process {
     pub fn new_process(vm: Rc<VM>) -> Self {
-        Process{
+        Self{
             vm,
             functions: HashMap::new(),
             stack: vec![]

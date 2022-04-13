@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 enum_index = "0.2.0"
 enum_index_derive = "0.2.0"
+arrayvec = "0.7.2"

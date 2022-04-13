@@ -19,9 +19,8 @@ use super::opcode::Opcode;
 /// \[0x01, \[u8; 8\]\] <-- Long constant </br>
 /// \[0x02, \[u8; 4\]\] <-- Float constant </br>
 /// \[0x03, \[u8; 8\]\] <-- Double constant </br>
-/// \[0x04, \[u8; usize\], \[u8; s_size\]\] <-- String constant, bytes at [1..4]/[1..8] indicates string bytes' len </br>
-///                                             usize:  32-bits will be 4, 64-bits will be 8 </br>
-///                                             s_size: Size of string bytes </br>
+/// \[0x04, \[u8; 8\], \[u8; s_size\]\] <-- String constant, bytes at [1..4]/[1..8] indicates string bytes' len </br>
+///                                           s_size: Size of string bytes </br>
 /// 
 /// ## Code: </br>
 /// \[\[u8; 4\], \[u8; c_size\]\] <-- First 4 bytes indicates max stack size (User needs to compute it) </br>
@@ -50,6 +49,7 @@ impl BytecodeBuilder {
     pub fn visit_constant_pool(&mut self) -> ConstantBuilder {
         ConstantBuilder{
             parent_builder: self,
+            count: 0,
             byte_pool: vec![],
         }
     }
@@ -68,6 +68,7 @@ impl BytecodeBuilder {
 
 pub struct ConstantBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
+    count: u64,
     byte_pool: Vec<u8>
 }
 
@@ -75,21 +76,25 @@ impl<'a> ConstantBuilder<'a> {
     pub fn visit_integer(&mut self, int: i32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&int.to_be_bytes());
+        self.count += 1;
     }
 
     pub fn visit_long(&mut self, long: i64) {
         self.byte_pool.push(0x01);
         self.byte_pool.extend_from_slice(&long.to_be_bytes());
+        self.count += 1;
     }
 
     pub fn visit_float(&mut self, float: f32) {
         self.byte_pool.push(0x02);
         self.byte_pool.extend_from_slice(&float.to_be_bytes());
+        self.count += 1;
     }
 
     pub fn visit_double(&mut self, double: f64) {
         self.byte_pool.push(0x03);
         self.byte_pool.extend_from_slice(&double.to_be_bytes());
+        self.count += 1;
     }
 
     pub fn visit_string(&mut self, string: String) {
@@ -98,6 +103,7 @@ impl<'a> ConstantBuilder<'a> {
         self.byte_pool.push(0x04);
         self.byte_pool.extend_from_slice(&string_bytes.len().to_be_bytes());
         self.byte_pool.extend_from_slice(&string_bytes);
+        self.count += 1;
     }
 
     pub fn visit_constant(&mut self, value: &dyn Any) {
@@ -119,6 +125,7 @@ impl<'a> ConstantBuilder<'a> {
     }
 
     pub fn visit_end(mut self) {
+        self.parent_builder.byte_pool.extend_from_slice(&self.count.to_be_bytes()[..]);
         self.parent_builder.byte_pool.append(&mut self.byte_pool);
     }
 }
