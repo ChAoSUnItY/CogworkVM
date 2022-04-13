@@ -153,7 +153,7 @@ impl<'a> InstructionBuilder<'a> {
     }
 
     pub fn visit_dump(&mut self) {
-        self.byte_pool.push(0x02);
+        self.byte_pool.push(0x01);
         self.count += 1;
     }
 
