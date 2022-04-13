@@ -1,6 +1,6 @@
 use std::{slice::Iter, str};
 
-use crate::{vm::{VM, Stackable, Code}};
+use crate::{vm::{VM, Stackable, Code}, opcode::Opcode};
 
 trait ConvertibleData<const COUNT: usize> {
     fn take_convert<'a>(iter: &mut impl Iterator<Item = &'a u8>) -> Self where Self: Sized {
@@ -120,9 +120,23 @@ impl<'a> Loader<'a> {
         let max_stack = self.read_data::<u16, 2>();
         let max_local = self.read_data::<u16, 2>();
         let instructions_size = self.read_data::<u32, 4>() as usize;
-        let instructions = Vec::with_capacity(instructions_size);
+        let mut instructions = Vec::with_capacity(instructions_size);
 
-        
+        for _ in 0..instructions_size {
+            match self.next() {
+                0x00 => {
+                    // load
+                    let index = self.read_data::<u32, 4>();
+
+                    instructions.push(Opcode::Load(index));
+                }
+                0x01 => {
+                    // dump
+                    instructions.push(Opcode::Dump);
+                }
+                opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
+            }
+        }
 
         VM::new_vm(constants, Code::new(max_stack, max_local, instructions))
     }

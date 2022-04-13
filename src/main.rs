@@ -1,4 +1,4 @@
-use cogwork::{bytecode::*, Loader};
+use cogwork::{bytecode::*, Loader, opcode::Opcode};
 
 fn main() {
     let mut bytecode_builder = BytecodeBuilder::new();
@@ -11,6 +11,13 @@ fn main() {
     constant_builder.visit_constant(&"POGGER");
 
     constant_builder.visit_end();
+    let mut instruction_builder = bytecode_builder.visit_code();
+
+    instruction_builder.visit_load(0);
+    instruction_builder.visit_opcode(Opcode::Dump);
+
+    instruction_builder.visit_max(1, 0);
+    instruction_builder.visit_end();
     let bytecode = bytecode_builder.visit_end();
 
     let loader = Loader::new(&bytecode);
