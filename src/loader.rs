@@ -47,16 +47,14 @@ impl<'a> Loader<'a> {
         let constant_pool_size = &(self.read_data::<u64, 8>() as usize);
         let mut constants: Vec<Stackable> = Vec::with_capacity(*constant_pool_size);
 
-        for i in 0..*constant_pool_size {
+        for _ in 0..*constant_pool_size {
             match self.next() {
                 0x00 => {
                     let integer = self.read_data::<i32, 4>();
 
                     constants.push(Stackable::Int(integer));
                 }
-                _ => {
-
-                }
+                tag @ _ => panic!("Unexpected constant tag {}", tag),
             }
         }
 
