@@ -68,7 +68,7 @@ impl BytecodeBuilder {
 
 pub struct ConstantBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
-    count: u64,
+    count: u32,
     byte_pool: Vec<u8>
 }
 
