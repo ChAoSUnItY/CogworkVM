@@ -22,6 +22,30 @@ impl ConvertibleData<4> for i32 {
     }
 }
 
+impl ConvertibleData<8> for i64 {
+    fn from_be_bytes(from: [u8; 8]) -> Self {
+        i64::from_be_bytes(from)
+    }
+}
+
+impl ConvertibleData<4> for f32 {
+    fn from_be_bytes(from: [u8; 4]) -> Self {
+        f32::from_be_bytes(from)
+    }
+}
+
+impl ConvertibleData<8> for f64 {
+    fn from_be_bytes(from: [u8; 8]) -> Self {
+        f64::from_be_bytes(from)
+    }
+}
+
+impl ConvertibleData<4> for u32 {
+    fn from_be_bytes(from: [u8; 4]) -> Self {
+        u32::from_be_bytes(from)
+    }
+}
+
 impl ConvertibleData<8> for u64 {
     fn from_be_bytes(from: [u8; 8]) -> Self {
         u64::from_be_bytes(from)
@@ -44,15 +68,38 @@ impl<'a> Loader<'a> {
         self.validate_header();
 
         // Load constants
-        let constant_pool_size = &(self.read_data::<u64, 8>() as usize);
+        let constant_pool_size = &(self.read_data::<u32, 4>() as usize);
         let mut constants: Vec<Stackable> = Vec::with_capacity(*constant_pool_size);
 
         for _ in 0..*constant_pool_size {
             match self.next() {
                 0x00 => {
+                    // Integer constant
                     let integer = self.read_data::<i32, 4>();
 
                     constants.push(Stackable::Int(integer));
+                }
+                0x01 => {
+                    // Long constant
+                    let long = self.read_data::<i64, 8>();
+
+                    constants.push(Stackable::Long(long));
+                }
+                0x02 => {
+                    // Float constant
+                    let float = self.read_data::<f32, 4>();
+
+                    constants.push(Stackable::Float(float));
+                }
+                0x03 => {
+                    // Double constant
+                    let double = self.read_data::<f64, 8>();
+
+                    constants.push(Stackable::Double(double));
+                }
+                0x04 => {
+                    // String constant
+                    
                 }
                 tag @ _ => panic!("Unexpected constant tag {}", tag),
             }
