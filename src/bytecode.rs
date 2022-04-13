@@ -20,7 +20,7 @@ use super::opcode::Opcode;
 /// \[0x02, \[u8; 4\]\] <-- Float constant </br>
 /// \[0x03, \[u8; 8\]\] <-- Double constant </br>
 /// \[0x04, \[u8; 8\], \[u8; s_size\]\] <-- String constant, bytes at [1..4]/[1..8] indicates string bytes' len </br>
-///                                           s_size: Size of string bytes </br>
+///                                         s_size: Size of string bytes </br>
 /// 
 /// ## Code: </br>
 /// \[\[u8; 4\], \[u8; c_size\]\] <-- First 4 bytes indicates max stack size (User needs to compute it) </br>
