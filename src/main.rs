@@ -21,7 +21,10 @@ fn main() {
     let bytecode = bytecode_builder.visit_end();
 
     let loader = Loader::new(&bytecode);
+    let vm = loader.load();
 
-    println!("{:?}", loader.load());
+    println!("{:?}", vm);
+
+    vm.execute();
 }
 

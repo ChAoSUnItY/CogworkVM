@@ -96,9 +96,15 @@ impl VM {
             code
         }
     }
+
+    pub fn execute(self) {
+        let main_proc = Process::new_process(self, 0);
+
+        main_proc.run();
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Code {
     max_stack: u16,
     max_local: u16,
@@ -119,15 +125,38 @@ impl Code {
 pub struct Process {
     vm: Rc<VM>,
     functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<Stackable>>>, // local functions
-    stack: Vec<Stackable>
+    stack: Vec<Stackable>,
+    pos: usize,
 }
 
 impl Process {
-    pub fn new_process(vm: Rc<VM>) -> Self {
+    pub fn new_process(vm: VM, pos: usize) -> Self {
+        let code = vm.code.clone();
+
         Self{
-            vm,
+            vm: Rc::new(vm),
             functions: HashMap::new(),
-            stack: vec![]
+            stack: Vec::with_capacity(code.max_stack as usize),
+            pos,
+        }
+    }
+
+    fn get_instruction(&self) -> Option<&Opcode> {
+        self.vm.code.instructions.get(self.pos)
+    } 
+
+    pub fn run(mut self) {
+        while let Some(opcode) = self.get_instruction() {
+            match opcode {
+                Opcode::Load(index) => {
+                    self.load(*index as usize);
+                }
+                Opcode::Dump => {
+                    self.dump();
+                }
+            }
+
+            self.pos += 1;
         }
     }
 
