@@ -1,31 +1,4 @@
-use std::rc::Rc;
-use cogwork::{vm::*, bytecode::*};
-
-macro_rules! new_vm {
-    ($($constant:expr),*) => {{
-        let mut c = Vec::<Stackable>::new();
-        $(
-            c.push($constant);
-        )*
-        VM::new_vm(c)
-    }};
-}
-
-macro_rules! inst {
-    ($id:ident load $index:expr) => {
-        $id.load($index);
-    };
-    ($id:ident add) => {
-        $id.add();
-    };
-    ($id:ident dump) => {
-        $id.dump();
-    };
-    ($id:ident return) => {
-        $id.r#return()
-    };
-}
-
+use cogwork::{bytecode::*, Loader};
 
 fn main() {
     let mut bytecode_builder = BytecodeBuilder::new();
@@ -36,7 +9,7 @@ fn main() {
     constant_builder.visit_end();
     let bytecode = bytecode_builder.visit_end();
 
-    let loader = cogwork::Loader::new(&bytecode);
+    let loader = Loader::new(&bytecode);
 
     println!("{:?}", loader.load());
 }

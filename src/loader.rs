@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use crate::{vm::{VM, Stackable, Code}, opcode::Opcode};
+use crate::{vm::{VM, Stackable, Code}};
 
 trait ConvertibleData<const COUNT: usize> {
     fn take_convert<'a>(iter: &mut impl Iterator<Item = &'a u8>) -> Self where Self: Sized {
