@@ -61,9 +61,10 @@ impl BytecodeBuilder {
     pub fn visit_code(&mut self) -> InstructionBuilder {
         InstructionBuilder{
             parent_builder: self,
-            byte_pool: vec![],
             max_stack: 0,
             max_local: 0,
+            count: 0,
+            byte_pool: vec![],
         }
     }
 
@@ -140,19 +141,26 @@ pub struct InstructionBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
     max_stack: u16,
     max_local: u16,
+    count: u32,
     byte_pool: Vec<u8>,
 }
 
 impl<'a> InstructionBuilder<'a> {
-    pub fn visit_load(&mut self, index: i32) {
+    pub fn visit_load(&mut self, index: u32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        self.count += 1;
+    }
+
+    pub fn visit_dump(&mut self) {
+        self.byte_pool.push(0x02);
+        self.count += 1;
     }
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Load(index) => self.visit_load(index),
-            Opcode::Dump => self.byte_pool.push(0x02),
+            Opcode::Dump => self.visit_dump(),
         }
     }
 
@@ -162,6 +170,9 @@ impl<'a> InstructionBuilder<'a> {
     }
 
     pub fn visit_end(mut self) {
+        self.parent_builder.byte_pool.extend_from_slice(&self.max_stack.to_be_bytes());
+        self.parent_builder.byte_pool.extend_from_slice(&self.max_local.to_be_bytes());
+        self.parent_builder.byte_pool.extend_from_slice(&self.count.to_be_bytes());
         self.parent_builder.byte_pool.append(&mut self.byte_pool);
     }
 }
