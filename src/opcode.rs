@@ -7,4 +7,5 @@ pub enum Opcode {
     Mul,                // 0x04
     Div,                // 0x05
     Mod,                // 0x06
+    Dup,                // 0x07
 }

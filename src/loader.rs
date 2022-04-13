@@ -142,6 +142,22 @@ impl<'a> Loader<'a> {
                     // sub
                     instructions.push(Opcode::Sub);
                 }
+                0x04 => {
+                    // mul
+                    instructions.push(Opcode::Mul);
+                }
+                0x05 => {
+                    // div
+                    instructions.push(Opcode::Add);
+                }
+                0x06 => {
+                    // mod
+                    instructions.push(Opcode::Div);
+                }
+                0x07 => {
+                    // dup
+                    instructions.push(Opcode::Dup);
+                }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
         }

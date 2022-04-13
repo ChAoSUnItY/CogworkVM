@@ -167,15 +167,36 @@ impl<'a> InstructionBuilder<'a> {
         self.count += 1;
     }
 
+    pub fn visit_mul(&mut self) {
+        self.byte_pool.push(0x04);
+        self.count += 1;
+    }
+
+    pub fn visit_div(&mut self) {
+        self.byte_pool.push(0x05);
+        self.count += 1;
+    }
+
+    pub fn visit_mod(&mut self) {
+        self.byte_pool.push(0x06);
+        self.count += 1;
+    }
+
+    pub fn visit_dup(&mut self) {
+        self.byte_pool.push(0x07);
+        self.count += 1;
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Load(index) => self.visit_load(index),
             Opcode::Dump => self.visit_dump(),
             Opcode::Add => self.visit_add(),
             Opcode::Sub => self.visit_sub(),
-            Opcode::Mul => todo!(),
-            Opcode::Div => todo!(),
-            Opcode::Mod => todo!(),
+            Opcode::Mul => self.visit_mul(),
+            Opcode::Div => self.visit_div(),
+            Opcode::Mod => self.visit_mod(),
+            Opcode::Dup => self.visit_dup(),
         }
     }
 

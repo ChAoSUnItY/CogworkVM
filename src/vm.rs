@@ -160,9 +160,18 @@ impl Process {
                 Opcode::Sub => {
                     self.sub();
                 }
-                Opcode::Mul => todo!(),
-                Opcode::Div => todo!(),
-                Opcode::Mod => todo!(),
+                Opcode::Mul => {
+                    self.mul();
+                }
+                Opcode::Div => {
+                    self.div();
+                }
+                Opcode::Mod => {
+                    self.r#mod();
+                }
+                Opcode::Dup => {
+                    self.dup();
+                }
             }
 
             self.pos += 1;
@@ -176,6 +185,16 @@ impl Process {
             self.stack.push(c.clone());
         } else {
             panic!("Unable to load constant at index {}", index);
+        }
+    }
+
+    pub fn dump(&mut self) {
+        let item = self.stack.pop();
+
+        if let Some(i) = item {
+            println!("{:?}", i);
+        } else {
+            panic!("Unable to pop an empty stack");
         }
     }
 
@@ -199,14 +218,41 @@ impl Process {
         }
     }
 
-    pub fn dump(&mut self) {
-        let item = self.stack.pop();
-
-        if let Some(i) = item {
-            println!("{:?}", i);
-        } else {
-            panic!("Unable to pop an empty stack");
+    pub fn mul(&mut self) {
+        if let [right, left] = &self.pop(2)[..] {
+            let (promoted_right, promoted_left, precedence) = 
+                Stackable::promote(right.clone(), left.clone());
+            let result_value = get_value!(promoted_left) * get_value!(promoted_right);
+    
+            self.stack.push(make_stackable!(precedence, result_value));
         }
+    }
+
+    pub fn div(&mut self) {
+        if let [right, left] = &self.pop(2)[..] {
+            let (promoted_right, promoted_left, precedence) = 
+                Stackable::promote(right.clone(), left.clone());
+            let result_value = get_value!(promoted_left) / get_value!(promoted_right);
+    
+            self.stack.push(make_stackable!(precedence, result_value));
+        }
+    }
+
+    pub fn r#mod(&mut self) {
+        if let [right, left] = &self.pop(2)[..] {
+            let (promoted_right, promoted_left, precedence) = 
+                Stackable::promote(right.clone(), left.clone());
+            let result_value = get_value!(promoted_left) % get_value!(promoted_right);
+    
+            self.stack.push(make_stackable!(precedence, result_value));
+        }
+    }
+
+    pub fn dup(&mut self) {
+        self.check_stack_size(1);
+
+        let stackable = self.stack.last().unwrap();
+        self.stack.push(stackable.clone());    
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {
