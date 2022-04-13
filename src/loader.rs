@@ -1,4 +1,4 @@
-use std::slice::Iter;
+use std::{slice::Iter, str};
 
 use crate::{vm::{VM, Stackable, Code}};
 
@@ -99,7 +99,13 @@ impl<'a> Loader<'a> {
                 }
                 0x04 => {
                     // String constant
-                    
+                    let string_size = self.read_data::<u64, 8>() as usize;
+                    let string_bytes = self.read(string_size);
+
+                    match str::from_utf8(&string_bytes) {
+                        Ok(string) => constants.push(Stackable::String(string.to_string())),
+                        Err(err) => panic!("{}", err),
+                    }
                 }
                 tag @ _ => panic!("Unexpected constant tag {}", tag),
             }
@@ -111,7 +117,7 @@ impl<'a> Loader<'a> {
     }
 
     fn validate_header(&mut self) {
-        let header = &self.bytecode.by_ref().take(8).map(|u| *u).collect::<Vec<u8>>()[..];
+        let header = &self.read(8);
         if header != &[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B] {
             panic!("Invalid header, should be `GEARWORK` (ascii form), but got `{}` (ascii form)", 
                 header.iter()
@@ -123,6 +129,10 @@ impl<'a> Loader<'a> {
 
     fn next(&mut self) -> &u8 {
         self.bytecode.by_ref().next().unwrap()
+    }
+
+    fn read(&mut self, n: usize) -> Vec<u8> {
+        self.bytecode.by_ref().take(n).map(|u| *u).collect()
     }
 
     fn read_data<CD, const COUNT: usize>(&mut self) -> CD where CD: ConvertibleData<COUNT> {

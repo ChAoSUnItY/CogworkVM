@@ -8,6 +8,7 @@ fn main() {
     constant_builder.visit_constant(&10i64);
     constant_builder.visit_constant(&1.0f32);
     constant_builder.visit_constant(&0.1f64);
+    constant_builder.visit_constant(&"POGGER");
 
     constant_builder.visit_end();
     let bytecode = bytecode_builder.visit_end();
