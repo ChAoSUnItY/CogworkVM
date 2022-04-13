@@ -2,6 +2,8 @@ use std::any::Any;
 
 use super::opcode::Opcode;
 
+// TODO: Let builder compute max stack & max local
+
 /// # Format summary: </br>
 /// 
 /// ## Overview: </br>
@@ -23,9 +25,10 @@ use super::opcode::Opcode;
 ///                                         s_size: Size of string bytes </br>
 /// 
 /// ## Code: </br>
-/// \[\[u8; 2\], \[u8; 2\], \[u8; c_size\]\] <-- First 2 bytes indicates max stack size, </br>
-///                                              the latter 2 bytes indicates max local variable size. </br>
-///                                              c_size: Size of instructions </br>
+/// \[\[u8; 2\], \[u8; 2\], \[u8; 4\], \[u8; c_size\]\] <-- First 2 bytes indicates max stack size, </br>
+///                                                         the latter 2 bytes indicates max local variable size, </br>
+///                                                         the latter 4 bytes indicates the followed code's instruction size. </br>
+///                                                         c_size: Size of instructions </br>
 /// 
 /// ## Instructions: </br>
 /// \[opcode, \[u8; f_size\]\] <-- Instruction, as known as opcode, followed bytes size is based on instruction </br>
