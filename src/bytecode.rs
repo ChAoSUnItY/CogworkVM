@@ -162,12 +162,17 @@ impl<'a> InstructionBuilder<'a> {
         self.count += 1;
     }
 
+    pub fn visit_sub(&mut self) {
+        self.byte_pool.push(0x03);
+        self.count += 1;
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Load(index) => self.visit_load(index),
             Opcode::Dump => self.visit_dump(),
             Opcode::Add => self.visit_add(),
-            Opcode::Sub => todo!(),
+            Opcode::Sub => self.visit_sub(),
             Opcode::Mul => todo!(),
             Opcode::Div => todo!(),
             Opcode::Mod => todo!(),

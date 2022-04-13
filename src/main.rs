@@ -15,7 +15,7 @@ fn main() {
 
     instruction_builder.visit_load(3);
     instruction_builder.visit_load(1);
-    instruction_builder.visit_add();
+    instruction_builder.visit_sub();
     instruction_builder.visit_opcode(Opcode::Dump);
 
     instruction_builder.visit_max(1, 0);

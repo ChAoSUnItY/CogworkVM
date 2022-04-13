@@ -157,7 +157,9 @@ impl Process {
                 Opcode::Add => {
                     self.add();
                 }
-                Opcode::Sub => todo!(),
+                Opcode::Sub => {
+                    self.sub();
+                }
                 Opcode::Mul => todo!(),
                 Opcode::Div => todo!(),
                 Opcode::Mod => todo!(),
@@ -167,7 +169,7 @@ impl Process {
         }
     }
 
-    pub fn load(&mut self, index: usize) -> &mut Self {
+    pub fn load(&mut self, index: usize) {
         let constant = self.vm.constants.get(index);
 
         if let Some(c) = constant {
@@ -175,26 +177,29 @@ impl Process {
         } else {
             panic!("Unable to load constant at index {}", index);
         }
-
-        self
     }
 
-    pub fn add(&mut self) -> &mut Self {
-        if self.stack.len() < 2 {
-            panic!("Unable to perform addition, requires 2+ items on stack but got {}", self.stack.len());
+    pub fn add(&mut self) {
+        if let [right, left] = &self.pop(2)[..] {
+            let (promoted_right, promoted_left, precedence) = 
+                Stackable::promote(right.clone(), left.clone());
+            let result_value = get_value!(promoted_left) + get_value!(promoted_right);
+    
+            self.stack.push(make_stackable!(precedence, result_value));
         }
-
-        let right = self.stack.pop().unwrap();
-        let left = self.stack.pop().unwrap();
-        let (promoted_right, promoted_left, precedence) = Stackable::promote(right, left);
-        let result_value = get_value!(promoted_left) + get_value!(promoted_right);
-
-        self.stack.push(make_stackable!(precedence, result_value));
-
-        self
     }
 
-    pub fn dump(&mut self) -> &mut Self {
+    pub fn sub(&mut self) {
+        if let [right, left] = &self.pop(2)[..] {
+            let (promoted_right, promoted_left, precedence) = 
+                Stackable::promote(right.clone(), left.clone());
+            let result_value = get_value!(promoted_left) - get_value!(promoted_right);
+    
+            self.stack.push(make_stackable!(precedence, result_value));
+        }
+    }
+
+    pub fn dump(&mut self) {
         let item = self.stack.pop();
 
         if let Some(i) = item {
@@ -202,11 +207,21 @@ impl Process {
         } else {
             panic!("Unable to pop an empty stack");
         }
-
-        return self;
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {
         return self.stack.pop();
+    }
+
+    fn pop(&mut self, pop_size: usize) -> Box<Vec<Stackable>> {
+        self.check_stack_size(2);
+
+        Box::new(self.stack.drain(self.stack.len() - pop_size..).collect())
+    }
+
+    fn check_stack_size(&self, required_size: usize) {
+        if self.stack.len() < required_size {
+            panic!("Unable to perform addition, requires {}+ items on stack but got {}", required_size, self.stack.len());
+        }
     }
 }
