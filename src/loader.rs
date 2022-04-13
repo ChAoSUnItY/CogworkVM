@@ -40,6 +40,12 @@ impl ConvertibleData<8> for f64 {
     }
 }
 
+impl ConvertibleData<2> for u16 {
+    fn from_be_bytes(from: [u8; 2]) -> Self {
+        u16::from_be_bytes(from)
+    }
+}
+
 impl ConvertibleData<4> for u32 {
     fn from_be_bytes(from: [u8; 4]) -> Self {
         u32::from_be_bytes(from)
@@ -69,7 +75,7 @@ impl<'a> Loader<'a> {
 
         // Load constants
         let constant_pool_size = &(self.read_data::<u32, 4>() as usize);
-        let mut constants: Vec<Stackable> = Vec::with_capacity(*constant_pool_size);
+        let mut constants = Vec::with_capacity(*constant_pool_size);
 
         for _ in 0..*constant_pool_size {
             match self.next() {
@@ -111,9 +117,14 @@ impl<'a> Loader<'a> {
             }
         }
 
-        let instructions = Vec::new();
+        let max_stack = self.read_data::<u16, 2>();
+        let max_local = self.read_data::<u16, 2>();
+        let instructions_size = self.read_data::<u32, 4>() as usize;
+        let instructions = Vec::with_capacity(instructions_size);
 
-        VM::new_vm(constants, Code::new(instructions))
+        
+
+        VM::new_vm(constants, Code::new(max_stack, max_local, instructions))
     }
 
     fn validate_header(&mut self) {

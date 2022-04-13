@@ -100,13 +100,17 @@ impl VM {
 
 #[derive(Debug)]
 pub struct Code {
+    max_stack: u16,
+    max_local: u16,
     instructions: Vec<Opcode>
 }
 
 impl Code {
-    pub fn new(instructions: Vec<Opcode>) -> Self {
+    pub fn new(max_stack: u16, max_local: u16, instructions: Vec<Opcode>) -> Self {
         Self{
-            instructions
+            max_stack,
+            max_local,
+            instructions,
         }
     }
 }
