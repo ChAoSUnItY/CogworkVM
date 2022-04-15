@@ -35,10 +35,16 @@ use super::opcode::Opcode;
 ///                                f_size: Size of followed bytes, based on instruction </br>
 /// 
 /// ## Instruction Set: </br>
-/// | Opcode name   | Opcode index  | Followed bytes    | Description |
-/// |---------------|---------------|-------------------|-------------|
-/// | load          | 0x00          | u8, u8, u8, u8    | Loads a constant from constant pool |
-/// | dump          | 0x01          |                   | Pop and print out top item from stack |
+/// | Opcode name   | Opcode index  | Followed bytes    | Description | Note |
+/// |---------------|---------------|-------------------|-------------|------|
+/// | load          | 0x00          | u8, u8, u8, u8    | Load a constant from constant pool ||
+/// | dump          | 0x01          |                   | Pop and print out top item from stack ||
+/// | add           | 0x02          |                   | Consume and add 2 items from stack and push result to stack | Operands must be Int, Long, Float, Double only|
+/// | sub           | 0x03          |                   | Consume and subtract 2 items from stack and push result to stack | *Ditto* |
+/// | mul           | 0x04          |                   | Consume and multiply 2 items from stack and push result to stack | *Ditto* |
+/// | div           | 0x05          |                   | Consume and divide 2 items from stack and push result to stack | *Ditto* |
+/// | mod           | 0x06          |                   | Consume and modulo 2 items from stack and push result to stack | *Ditto* |
+/// | dup           | 0x07          |                   | Duplicate top item to stack ||
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>
 }
