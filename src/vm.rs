@@ -1,6 +1,7 @@
 use std::{vec, fmt::{Debug, Write}, collections::HashMap, rc::Rc};
 
 use arrayvec::ArrayVec;
+use enum_index::EnumIndex;
 
 use crate::opcode::Opcode;
 
@@ -32,7 +33,7 @@ macro_rules! get_value {
     };
 }
 
-#[derive(Clone)]
+#[derive(EnumIndex, Clone)]
 pub enum Stackable {
     Int(i32),
     Long(i64),
