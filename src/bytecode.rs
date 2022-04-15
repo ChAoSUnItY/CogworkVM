@@ -49,6 +49,7 @@ pub const COMPUTE_LOCAL: u8 = 0b00000010;
 /// | dup           | 0x07          |                   | Duplicate top item to stack ||
 /// | swp           | 0x08          |                   | Swap last top two items from stack ||
 /// | store         | 0x09          | u8, u8            | Pop and store top item from stack to local variable ||
+/// | load          | 0x0A          | u8, u8            | Load a local variable onto stack ||
 #[derive(Debug)]
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
