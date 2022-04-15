@@ -1,4 +1,4 @@
-use std::{any::Any, collections::BTreeSet};
+use std::{any::Any, cell::RefCell};
 
 use super::opcode::Opcode;
 
@@ -44,6 +44,7 @@ use super::opcode::Opcode;
 /// | swp           | 0x08          |                   | Swap last top two items from stack ||
 /// | store         | 0x09          | u8, u8            | Pop and store top item from stack to local variable ||
 /// | load          | 0x0A          | u8, u8            | Load a local variable onto stack ||
+/// | goto          | 0x0B          | u8, u8, u8, u8    | Jump to target instruction index ||
 #[derive(Debug)]
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
@@ -67,16 +68,18 @@ impl BytecodeBuilder {
     pub fn visit_code(&mut self) -> InstructionBuilder {
         InstructionBuilder{
             parent_builder: self,
+            labels: vec![],
             byte_pool: vec![],
             pos: 0,
         }
     }
 
-    pub fn visit_end(&self) -> Vec<u8> {
-        return self.byte_pool.clone();
+    pub fn visit_end(self) -> Vec<u8> {
+        return self.byte_pool;
     }
 }
 
+#[derive(Debug)]
 pub struct ConstantBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
     count: u32,
@@ -87,25 +90,25 @@ impl<'a> ConstantBuilder<'a> {
     pub fn visit_integer(&mut self, int: i32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&int.to_be_bytes());
-
+        self.count += 1;
     }
 
     pub fn visit_long(&mut self, long: i64) {
         self.byte_pool.push(0x01);
         self.byte_pool.extend_from_slice(&long.to_be_bytes());
-
+        self.count += 1;
     }
 
     pub fn visit_float(&mut self, float: f32) {
         self.byte_pool.push(0x02);
         self.byte_pool.extend_from_slice(&float.to_be_bytes());
-
+        self.count += 1;
     }
 
     pub fn visit_double(&mut self, double: f64) {
         self.byte_pool.push(0x03);
         self.byte_pool.extend_from_slice(&double.to_be_bytes());
-
+        self.count += 1;
     }
 
     pub fn visit_string(&mut self, string: String) {
@@ -114,7 +117,7 @@ impl<'a> ConstantBuilder<'a> {
         self.byte_pool.push(0x04);
         self.byte_pool.extend_from_slice(&string_bytes.len().to_be_bytes());
         self.byte_pool.extend_from_slice(&string_bytes);
-
+        self.count += 1;
     }
 
     pub fn visit_constant(&mut self, value: &dyn Any) {
@@ -143,8 +146,9 @@ impl<'a> ConstantBuilder<'a> {
 
 pub struct InstructionBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
+    labels: Vec<(u32, &'a RefCell<Label>)>,
     byte_pool: Vec<u8>,
-    pos: u16,
+    pos: u32,
 }
 
 impl<'a> InstructionBuilder<'a> {
@@ -210,10 +214,22 @@ impl<'a> InstructionBuilder<'a> {
         self.advance();
     }
 
-    pub fn visit_label(&mut self) -> Label {
-        Label{
+    pub fn visit_label(&mut self, label: &'a RefCell<Label>) {
+        *label.borrow_mut() = Label{
             pos: self.pos,
         }
+    }
+
+    pub fn visit_goto(&mut self, label: &'a RefCell<Label>) {
+        self.byte_pool.push(0x0B);
+        self.labels.push((self.byte_pool.len() as u32, label));
+        self.advance();
+    }
+
+    fn visit_goto_labeled(&mut self, label: Label) {
+        self.byte_pool.push(0x0B);
+        self.byte_pool.extend_from_slice(&label.pos.to_be_bytes());
+        self.advance();
     }
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
@@ -229,14 +245,46 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Swp => self.visit_swp(),
             Opcode::Store(index) => self.visit_store(index),
             Opcode::Load(index) => self.visit_load(index),
+            Opcode::Goto(index) => self.visit_goto_labeled(Label{
+                pos: index
+            }),
         }
     }
 
-    pub fn visit_end(mut self) {
-        self.parent_builder.byte_pool.append(&mut self.byte_pool);
+    pub fn visit_end(self) {
+        let byte_pool = self.byte_pool;
+        let mut final_byte_pool = vec![];
+        let mut previous_index = 0;
+        let labels = self.labels;
+
+        for (index, (start_index, label)) in labels.iter().enumerate() {
+            let range = if index == 0 {
+                0..*start_index as usize
+            } else {
+                previous_index..*start_index as usize
+            };
+            let mut seg = byte_pool[range].to_vec();
+            seg.extend_from_slice(&label.to_owned().borrow().pos.to_be_bytes());
+            final_byte_pool.extend_from_slice(&seg);
+            previous_index = *start_index as usize;
+        }
+
+        final_byte_pool.extend_from_slice(&byte_pool[previous_index..]);
+        
+        self.parent_builder.byte_pool.extend_from_slice(&self.pos.to_be_bytes());
+        self.parent_builder.byte_pool.append(&mut final_byte_pool);
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Label {
-    pub pos: u16
+    pos: u32
+}
+
+impl Label {
+    pub fn empty() -> Self {
+        Self{
+            pos: 0
+        }
+    }
 }

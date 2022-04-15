@@ -1,8 +1,9 @@
+use std::cell::RefCell;
+
 use cogwork::{bytecode::*, Loader, opcode::Opcode};
 
 fn main() {
     let mut bytecode_builder = BytecodeBuilder::new();
-    println!("{:?}", bytecode_builder);
     let mut constant_builder = bytecode_builder.visit_constant_pool();
     
     constant_builder.visit_constant(&1);
@@ -15,10 +16,13 @@ fn main() {
     let mut instruction_builder = bytecode_builder.visit_code();
 
     instruction_builder.visit_ldc(4);
+    let label = RefCell::new(Label::empty());
+    instruction_builder.visit_goto(&label);
     instruction_builder.visit_store(0);
     instruction_builder.visit_load(0);
     instruction_builder.visit_dup();
     instruction_builder.visit_dump();
+    instruction_builder.visit_label(&label);
     instruction_builder.visit_opcode(Opcode::Dump);
 
     instruction_builder.visit_end();

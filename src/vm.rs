@@ -125,11 +125,11 @@ pub struct Process {
     functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<Stackable>>>, // local functions
     stack: Vec<Stackable>,
     local_variable: BTreeMap<u16, Stackable>,
-    pos: usize,
+    pos: u32,
 }
 
 impl Process {
-    pub fn new_process(vm: VM, pos: usize) -> Self {
+    pub fn new_process(vm: VM, pos: u32) -> Self {
         let code = vm.code.clone();
 
         Self{
@@ -143,12 +143,14 @@ impl Process {
     }
 
     fn get_instruction(&self) -> Option<&Opcode> {
-        self.vm.code.instructions.get(self.pos)
+        self.vm.code.instructions.get(self.pos as usize)
     } 
 
     pub fn run(mut self) {
         while let Some(opcode) = self.get_instruction() {
-            match *opcode {
+            let opcode = *opcode;
+
+            match opcode {
                 Opcode::Ldc(index) => {
                     self.ldc(index as usize);
                 }
@@ -182,9 +184,15 @@ impl Process {
                 Opcode::Load(index) => {
                     self.load(index as usize);
                 }
+                Opcode::Goto(index) => {
+                    self.goto(index);
+                }
             }
 
-            self.pos += 1;
+            if opcode.enum_index() != 0x0B {
+                // Don't move instruction's pos
+                self.pos += 1;
+            }
         }
     }
 
@@ -291,6 +299,10 @@ impl Process {
         } else {
             panic!("Unable to load variable: index exceeded VM's hard limit.\n    Got: {}\n    Limit: 65535", index);
         }
+    }
+
+    pub fn goto(&mut self, index: u32) {
+        self.pos = index;
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {

@@ -74,10 +74,10 @@ impl<'a> Loader<'a> {
         self.validate_header();
 
         // Load constants
-        let constant_pool_size = &(self.read_data::<u32, 4>() as usize);
-        let mut constants = Vec::with_capacity(*constant_pool_size);
+        let constant_pool_size = self.read_data::<u32, 4>() as usize;
+        let mut constants = Vec::with_capacity(constant_pool_size);
 
-        for _ in 0..*constant_pool_size {
+        for _ in 0..constant_pool_size {
             match self.next() {
                 0x00 => {
                     // Integer constant
@@ -171,6 +171,12 @@ impl<'a> Loader<'a> {
                     let index = self.read_data::<u16, 2>();
 
                     instructions.push(Opcode::Load(index));
+                }
+                0x0B => {
+                    // goto
+                    let index = self.read_data::<u32, 4>();
+
+                    instructions.push(Opcode::Goto(index));
                 }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }

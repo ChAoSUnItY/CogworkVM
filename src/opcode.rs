@@ -11,4 +11,5 @@ pub enum Opcode {
     Swp,                // 0x08
     Store(u16),         // 0x09
     Load(u16),          // 0x0A
+    Goto(u32),          // 0x0B
 }
