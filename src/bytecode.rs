@@ -3,6 +3,8 @@ use std::any::Any;
 use super::opcode::Opcode;
 
 // TODO: Let builder compute max stack & max local
+pub const COMPUTE_STACK: u8 = 0b00000001;
+pub const COMPUTE_LOCAL: u8 = 0b00000010;
 
 /// # Format summary: </br>
 /// 
@@ -47,15 +49,20 @@ use super::opcode::Opcode;
 /// | dup           | 0x07          |                   | Duplicate top item to stack ||
 /// | swp           | 0x08          |                   | Swap last top two items from stack ||
 /// | store         | 0x09          | u8, u8            | Pop and store top item from stack to local variable ||
+#[derive(Debug)]
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
+    compute_stack: bool,
+    compute_local: bool,
     locals: Vec<String>,
 }
 
 impl BytecodeBuilder {
-    pub fn new() -> Self {
+    pub fn new(flags: u8) -> Self {
         Self{
             byte_pool: vec![0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B],
+            compute_stack: flags & 1 == 1,
+            compute_local: flags & 2 == 2,
             locals: vec![],
         }
     }

@@ -1,7 +1,8 @@
 use cogwork::{bytecode::*, Loader, opcode::Opcode};
 
 fn main() {
-    let mut bytecode_builder = BytecodeBuilder::new();
+    let mut bytecode_builder = BytecodeBuilder::new(0);
+    println!("{:?}", bytecode_builder);
     let mut constant_builder = bytecode_builder.visit_constant_pool();
     
     constant_builder.visit_constant(&1);
