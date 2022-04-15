@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use cogwork::{bytecode::*, Loader, opcode::Opcode};
 
 fn main() {
