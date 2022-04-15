@@ -8,4 +8,5 @@ pub enum Opcode {
     Div,                // 0x05
     Mod,                // 0x06
     Dup,                // 0x07
+    Swp,                // 0x08
 }
