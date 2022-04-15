@@ -173,6 +173,9 @@ impl Process {
                 Opcode::Dup => {
                     self.dup();
                 }
+                &Opcode::Swp => {
+                    self.swp();
+                }
             }
 
             self.pos += 1;
@@ -256,14 +259,26 @@ impl Process {
         self.stack.push(stackable.clone());    
     }
 
+    pub fn swp(&mut self) {
+        self.check_stack_size(2);
+
+        if let [top1, top2] = &self.pop(2)[..] {
+            self.push(&[top2.clone(), top1.clone()]);
+        }
+    }
+
     pub fn r#return(&mut self) -> Option<Stackable> {
         return self.stack.pop();
     }
 
-    fn pop(&mut self, pop_size: usize) -> Box<Vec<Stackable>> {
+    fn pop(&mut self, pop_size: usize) -> Vec<Stackable> {
         self.check_stack_size(2);
 
-        Box::new(self.stack.drain(self.stack.len() - pop_size..).collect())
+        self.stack.drain(self.stack.len() - pop_size..).collect()
+    }
+
+    fn push(&mut self, items: &[Stackable]) {
+
     }
 
     fn check_stack_size(&self, required_size: usize) {
