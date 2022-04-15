@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, collections::BTreeSet};
 
 use super::opcode::Opcode;
 
@@ -54,7 +54,6 @@ pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
     compute_stack: bool,
     compute_local: bool,
-    locals: Vec<String>,
 }
 
 impl BytecodeBuilder {
@@ -63,7 +62,6 @@ impl BytecodeBuilder {
             byte_pool: vec![0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B],
             compute_stack: flags & 1 == 1,
             compute_local: flags & 2 == 2,
-            locals: vec![],
         }
     }
 
@@ -82,6 +80,7 @@ impl BytecodeBuilder {
             max_local: 0,
             count: 0,
             byte_pool: vec![],
+            locals: BTreeSet::new(),
         }
     }
 
@@ -160,6 +159,7 @@ pub struct InstructionBuilder<'a> {
     max_local: u16,
     count: u32,
     byte_pool: Vec<u8>,
+    locals: BTreeSet<u16>,
 }
 
 impl<'a> InstructionBuilder<'a> {
@@ -212,6 +212,15 @@ impl<'a> InstructionBuilder<'a> {
     pub fn visit_store(&mut self, index: u16) {
         self.byte_pool.push(0x09);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+
+        if self.parent_builder.compute_local {
+            if self.locals.len() == u16::MAX.into() {
+                panic!("Unable to add local variable: local variable size has reached hard limit (65535)")
+            }
+
+            self.locals.insert(index);
+        }
+
         self.count += 1;
     }
 
@@ -231,8 +240,17 @@ impl<'a> InstructionBuilder<'a> {
     }
 
     pub fn visit_max(&mut self, max_stack: u16, max_local: u16) {
-        self.max_stack = max_stack;
-        self.max_local = max_local;
+        if self.parent_builder.compute_stack {
+            todo!()
+        } else {
+            self.max_stack = max_stack;
+        }
+
+        if self.parent_builder.compute_local {
+            self.max_local = self.locals.len() as u16;
+        } else {
+            self.max_local = max_local;
+        }
     }
 
     pub fn visit_end(mut self) {
