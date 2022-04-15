@@ -2,10 +2,6 @@ use std::{any::Any, collections::BTreeSet};
 
 use super::opcode::Opcode;
 
-// TODO: Let builder compute max stack & max local
-pub const COMPUTE_STACK: u8 = 0b00000001;
-pub const COMPUTE_LOCAL: u8 = 0b00000010;
-
 /// # Format summary: </br>
 /// 
 /// ## Overview: </br>
@@ -27,10 +23,8 @@ pub const COMPUTE_LOCAL: u8 = 0b00000010;
 ///                                         s_size: Size of string bytes </br>
 /// 
 /// ## Code: </br>
-/// \[\[u8; 2\], \[u8; 2\], \[u8; 4\], \[u8; c_size\]\] <-- First 2 bytes indicates max stack size, </br>
-///                                                         the latter 2 bytes indicates max local variable size, </br>
-///                                                         the latter 4 bytes indicates the followed code's instruction size. </br>
-///                                                         c_size: Size of instructions </br>
+/// \[\[u8; 4\],\[u8; c_size\]\] <-- Represents instructions, the first 4 bytes indicates instruction length.
+///                                  c_size: Size of instructions </br>
 /// 
 /// ## Instructions: </br>
 /// \[opcode, \[u8; f_size\]\] <-- Instruction, as known as opcode, followed bytes size is based on instruction </br>
@@ -53,16 +47,12 @@ pub const COMPUTE_LOCAL: u8 = 0b00000010;
 #[derive(Debug)]
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
-    compute_stack: bool,
-    compute_local: bool,
 }
 
 impl BytecodeBuilder {
-    pub fn new(flags: u8) -> Self {
+    pub fn new() -> Self {
         Self{
             byte_pool: vec![0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B],
-            compute_stack: flags & 1 == 1,
-            compute_local: flags & 2 == 2,
         }
     }
 
@@ -77,11 +67,7 @@ impl BytecodeBuilder {
     pub fn visit_code(&mut self) -> InstructionBuilder {
         InstructionBuilder{
             parent_builder: self,
-            max_stack: 0,
-            max_local: 0,
-            count: 0,
             byte_pool: vec![],
-            locals: BTreeSet::new(),
         }
     }
 
@@ -100,25 +86,25 @@ impl<'a> ConstantBuilder<'a> {
     pub fn visit_integer(&mut self, int: i32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&int.to_be_bytes());
-        self.count += 1;
+
     }
 
     pub fn visit_long(&mut self, long: i64) {
         self.byte_pool.push(0x01);
         self.byte_pool.extend_from_slice(&long.to_be_bytes());
-        self.count += 1;
+
     }
 
     pub fn visit_float(&mut self, float: f32) {
         self.byte_pool.push(0x02);
         self.byte_pool.extend_from_slice(&float.to_be_bytes());
-        self.count += 1;
+
     }
 
     pub fn visit_double(&mut self, double: f64) {
         self.byte_pool.push(0x03);
         self.byte_pool.extend_from_slice(&double.to_be_bytes());
-        self.count += 1;
+
     }
 
     pub fn visit_string(&mut self, string: String) {
@@ -127,7 +113,7 @@ impl<'a> ConstantBuilder<'a> {
         self.byte_pool.push(0x04);
         self.byte_pool.extend_from_slice(&string_bytes.len().to_be_bytes());
         self.byte_pool.extend_from_slice(&string_bytes);
-        self.count += 1;
+
     }
 
     pub fn visit_constant(&mut self, value: &dyn Any) {
@@ -156,93 +142,55 @@ impl<'a> ConstantBuilder<'a> {
 
 pub struct InstructionBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
-    max_stack: u16,
-    max_local: u16,
-    count: u32,
     byte_pool: Vec<u8>,
-    locals: BTreeSet<u16>,
 }
 
 impl<'a> InstructionBuilder<'a> {
     pub fn visit_ldc(&mut self, index: u32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
-        
-        if self.parent_builder.compute_stack {
-            self.max_stack += 1;
-        }
-
-        self.count += 1;
     }
 
     pub fn visit_dump(&mut self) {
         self.byte_pool.push(0x01);
-        self.count += 1;
     }
 
     pub fn visit_add(&mut self) {
         self.byte_pool.push(0x02);
-        self.count += 1;
     }
 
     pub fn visit_sub(&mut self) {
         self.byte_pool.push(0x03);
-        self.count += 1;
     }
 
     pub fn visit_mul(&mut self) {
         self.byte_pool.push(0x04);
-        self.count += 1;
     }
 
     pub fn visit_div(&mut self) {
         self.byte_pool.push(0x05);
-        self.count += 1;
     }
 
     pub fn visit_mod(&mut self) {
         self.byte_pool.push(0x06);
-        self.count += 1;
     }
 
     pub fn visit_dup(&mut self) {
         self.byte_pool.push(0x07);
-                
-        if self.parent_builder.compute_stack {
-            self.max_stack += 1;
-        }
-
-        self.count += 1;
     }
 
     pub fn visit_swp(&mut self) {
         self.byte_pool.push(0x08);
-
-        self.count += 1;
     }
 
     pub fn visit_store(&mut self, index: u16) {
         self.byte_pool.push(0x09);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
-
-        if self.locals.len() == u16::MAX.into() {
-            panic!("Unable to add local variable: local variable size has reached hard limit (65535)")
-        }
-
-        self.locals.insert(index);
-
-        self.count += 1;
     }
 
     pub fn visit_load(&mut self, index: u16) {
         self.byte_pool.push(0x0A);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
-                
-        if self.parent_builder.compute_stack {
-            self.max_stack += 1;
-        }
-
-        self.count += 1;
     }
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
@@ -261,24 +209,7 @@ impl<'a> InstructionBuilder<'a> {
         }
     }
 
-    pub fn visit_max(&mut self, max_stack: u16, max_local: u16) {
-        if self.parent_builder.compute_stack {
-            // No need to do any operations
-        } else {
-            self.max_stack = max_stack;
-        }
-
-        if self.parent_builder.compute_local {
-            self.max_local = self.locals.len() as u16;
-        } else {
-            self.max_local = max_local;
-        }
-    }
-
     pub fn visit_end(mut self) {
-        self.parent_builder.byte_pool.extend_from_slice(&self.max_stack.to_be_bytes());
-        self.parent_builder.byte_pool.extend_from_slice(&self.max_local.to_be_bytes());
-        self.parent_builder.byte_pool.extend_from_slice(&self.count.to_be_bytes());
         self.parent_builder.byte_pool.append(&mut self.byte_pool);
     }
 }

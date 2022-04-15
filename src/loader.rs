@@ -117,8 +117,6 @@ impl<'a> Loader<'a> {
             }
         }
 
-        let max_stack = self.read_data::<u16, 2>();
-        let max_local = self.read_data::<u16, 2>();
         let instructions_size = self.read_data::<u32, 4>() as usize;
         let mut instructions = Vec::with_capacity(instructions_size);
 
@@ -178,7 +176,7 @@ impl<'a> Loader<'a> {
             }
         }
 
-        VM::new_vm(constants, Code::new(max_stack, max_local, instructions))
+        VM::new_vm(constants, Code::new(instructions))
     }
 
     fn validate_header(&mut self) {

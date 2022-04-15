@@ -107,16 +107,12 @@ impl VM {
 
 #[derive(Debug, Clone)]
 pub struct Code {
-    max_stack: u16,
-    max_local: u16,
     instructions: Vec<Opcode>
 }
 
 impl Code {
-    pub fn new(max_stack: u16, max_local: u16, instructions: Vec<Opcode>) -> Self {
+    pub fn new(instructions: Vec<Opcode>) -> Self {
         Self{
-            max_stack,
-            max_local,
             instructions,
         }
     }
@@ -135,13 +131,12 @@ pub struct Process {
 impl Process {
     pub fn new_process(vm: VM, pos: usize) -> Self {
         let code = vm.code.clone();
-        let max_stack = code.max_stack;
 
         Self{
             vm: Rc::new(vm),
             code,
             functions: HashMap::new(),
-            stack: Vec::with_capacity(max_stack as usize),
+            stack: Vec::new(),
             local_variable: BTreeMap::new(),
             pos,
         }
@@ -281,16 +276,21 @@ impl Process {
     pub fn store(&mut self, index: usize) {
         self.check_stack_size(1);
 
-        let stackable = self.stack.pop().unwrap();
-        if self.local_variable.len() <= self.code.max_local.into() {
+        if index <= u16::MAX.into() {
+            let stackable = self.stack.pop().unwrap();
             self.local_variable.insert(index as u16, stackable);
+        } else {
+            panic!("Unable to store variable: index exceeded VM's hard limit.\n    Got: {}\n    Limit: 65535", index);
         }
     }
 
     pub fn load(&mut self, index: usize) {
-        let stackable = self.local_variable.get(&(index as u16)).unwrap().clone();
-
-        self.stack.push(stackable);
+        if index <= u16::MAX.into() {
+            let stackable = self.local_variable.get(&(index as u16)).unwrap().clone();
+            self.stack.push(stackable);
+        } else {
+            panic!("Unable to load variable: index exceeded VM's hard limit.\n    Got: {}\n    Limit: 65535", index);
+        }
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {
