@@ -45,6 +45,7 @@ use super::opcode::Opcode;
 /// | div           | 0x05          |                   | Consume and divide 2 items from stack and push result to stack | *Ditto* |
 /// | mod           | 0x06          |                   | Consume and modulo 2 items from stack and push result to stack | *Ditto* |
 /// | dup           | 0x07          |                   | Duplicate top item to stack ||
+/// | swp           | 0x08          |                   | Swap last top two items from stack || 
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>
 }
@@ -193,6 +194,11 @@ impl<'a> InstructionBuilder<'a> {
         self.count += 1;
     }
 
+    pub fn visit_swp(&mut self) {
+        self.byte_pool.push(0x08);
+        self.count += 1;
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Load(index) => self.visit_load(index),
@@ -203,6 +209,7 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Div => self.visit_div(),
             Opcode::Mod => self.visit_mod(),
             Opcode::Dup => self.visit_dup(),
+            Opcode::Swp => self.visit_swp(),
         }
     }
 
