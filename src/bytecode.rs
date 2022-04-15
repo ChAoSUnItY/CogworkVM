@@ -220,6 +220,12 @@ impl<'a> InstructionBuilder<'a> {
         }
     }
 
+    pub fn make_label(&self) -> RefCell<Label> {
+        RefCell::new(Label {
+            pos: 0
+        })
+    }
+
     pub fn visit_goto(&mut self, label: &'a RefCell<Label>) {
         self.byte_pool.push(0x0B);
         self.labels.push((self.byte_pool.len() as u32, label));
@@ -279,12 +285,4 @@ impl<'a> InstructionBuilder<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct Label {
     pos: u32
-}
-
-impl Label {
-    pub fn empty() -> Self {
-        Self{
-            pos: 0
-        }
-    }
 }
