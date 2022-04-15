@@ -158,6 +158,10 @@ impl<'a> Loader<'a> {
                     // dup
                     instructions.push(Opcode::Dup);
                 }
+                0x08 => {
+                    // swp
+                    instructions.push(Opcode::Swp);
+                }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
         }
