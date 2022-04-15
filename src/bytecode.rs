@@ -68,6 +68,7 @@ impl BytecodeBuilder {
         InstructionBuilder{
             parent_builder: self,
             byte_pool: vec![],
+            pos: 0,
         }
     }
 
@@ -143,54 +144,76 @@ impl<'a> ConstantBuilder<'a> {
 pub struct InstructionBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
     byte_pool: Vec<u8>,
+    pos: u16,
 }
 
 impl<'a> InstructionBuilder<'a> {
+    fn advance(&mut self) {
+        self.pos += 1;
+    }
+
     pub fn visit_ldc(&mut self, index: u32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        self.advance();
     }
 
     pub fn visit_dump(&mut self) {
         self.byte_pool.push(0x01);
+        self.advance();
     }
 
     pub fn visit_add(&mut self) {
         self.byte_pool.push(0x02);
+        self.advance();
     }
 
     pub fn visit_sub(&mut self) {
         self.byte_pool.push(0x03);
+        self.advance();
     }
 
     pub fn visit_mul(&mut self) {
         self.byte_pool.push(0x04);
+        self.advance();
     }
 
     pub fn visit_div(&mut self) {
         self.byte_pool.push(0x05);
+        self.advance();
     }
 
     pub fn visit_mod(&mut self) {
         self.byte_pool.push(0x06);
+        self.advance();
     }
 
     pub fn visit_dup(&mut self) {
         self.byte_pool.push(0x07);
+        self.advance();
     }
 
     pub fn visit_swp(&mut self) {
         self.byte_pool.push(0x08);
+        self.advance();
     }
 
     pub fn visit_store(&mut self, index: u16) {
         self.byte_pool.push(0x09);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        self.advance();
     }
 
     pub fn visit_load(&mut self, index: u16) {
         self.byte_pool.push(0x0A);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        self.advance();
+    }
+
+    pub fn visit_label(&mut self) -> Label {
+        Label{
+            pos: self.pos,
+        }
     }
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
@@ -212,4 +235,8 @@ impl<'a> InstructionBuilder<'a> {
     pub fn visit_end(mut self) {
         self.parent_builder.byte_pool.append(&mut self.byte_pool);
     }
+}
+
+pub struct Label {
+    pub pos: u16
 }
