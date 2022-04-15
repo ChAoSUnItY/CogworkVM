@@ -127,6 +127,7 @@ pub struct Process {
     vm: Rc<VM>,
     functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<Stackable>>>, // local functions
     stack: Vec<Stackable>,
+    local_variable: Vec<Stackable>,
     pos: usize,
 }
 
@@ -138,6 +139,7 @@ impl Process {
             vm: Rc::new(vm),
             functions: HashMap::new(),
             stack: Vec::with_capacity(code.max_stack as usize),
+            local_variable: Vec::with_capacity(code.max_local as usize),
             pos,
         }
     }
@@ -148,9 +150,9 @@ impl Process {
 
     pub fn run(mut self) {
         while let Some(opcode) = self.get_instruction() {
-            match opcode {
+            match *opcode {
                 Opcode::Ldc(index) => {
-                    self.load(*index as usize);
+                    self.load(index as usize);
                 }
                 Opcode::Dump => {
                     self.dump();
@@ -173,8 +175,11 @@ impl Process {
                 Opcode::Dup => {
                     self.dup();
                 }
-                &Opcode::Swp => {
+                Opcode::Swp => {
                     self.swp();
+                }
+                Opcode::Store(index) => {
+                    self.store(index as usize);
                 }
             }
 
@@ -265,6 +270,13 @@ impl Process {
         if let [top1, top2] = &self.pop(2)[..] {
             self.push(&[top2.clone(), top1.clone()]);
         }
+    }
+
+    pub fn store(&mut self, index: usize) {
+        self.check_stack_size(1);
+
+        let stackable = self.stack.pop().unwrap();
+        self.local_variable[index] = stackable;
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {

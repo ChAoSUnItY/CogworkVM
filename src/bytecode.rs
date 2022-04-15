@@ -202,6 +202,12 @@ impl<'a> InstructionBuilder<'a> {
         self.count += 1;
     }
 
+    pub fn visit_store(&mut self, index: u16) {
+        self.byte_pool.push(0x09);
+        self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        self.count += 1;
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Ldc(index) => self.visit_load(index),

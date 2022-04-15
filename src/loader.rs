@@ -125,7 +125,7 @@ impl<'a> Loader<'a> {
         for _ in 0..instructions_size {
             match self.next() {
                 0x00 => {
-                    // load
+                    // ldc
                     let index = self.read_data::<u32, 4>();
 
                     instructions.push(Opcode::Ldc(index));
@@ -161,6 +161,12 @@ impl<'a> Loader<'a> {
                 0x08 => {
                     // swp
                     instructions.push(Opcode::Swp);
+                }
+                0x09 => {
+                    // store
+                    let index = self.read_data::<u16, 2>();
+
+                    instructions.push(Opcode::Store(index));
                 }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
