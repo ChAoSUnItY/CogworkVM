@@ -37,7 +37,7 @@ use super::opcode::Opcode;
 /// ## Instruction Set: </br>
 /// | Opcode name   | Opcode index  | Followed bytes    | Description | Note |
 /// |---------------|---------------|-------------------|-------------|------|
-/// | load          | 0x00          | u8, u8, u8, u8    | Load a constant from constant pool ||
+/// | ldc           | 0x00          | u8, u8, u8, u8    | Load a constant from constant pool ||
 /// | dump          | 0x01          |                   | Pop and print out top item from stack ||
 /// | add           | 0x02          |                   | Consume and add 2 items from stack and push result to stack | Operands must be Int, Long, Float, Double only|
 /// | sub           | 0x03          |                   | Consume and subtract 2 items from stack and push result to stack | *Ditto* |
@@ -45,15 +45,18 @@ use super::opcode::Opcode;
 /// | div           | 0x05          |                   | Consume and divide 2 items from stack and push result to stack | *Ditto* |
 /// | mod           | 0x06          |                   | Consume and modulo 2 items from stack and push result to stack | *Ditto* |
 /// | dup           | 0x07          |                   | Duplicate top item to stack ||
-/// | swp           | 0x08          |                   | Swap last top two items from stack || 
+/// | swp           | 0x08          |                   | Swap last top two items from stack ||
+/// | store         | 0x09          | u8, u8            | Pop and store top item from stack to local variable ||
 pub struct BytecodeBuilder {
-    byte_pool: Vec<u8>
+    byte_pool: Vec<u8>,
+    locals: Vec<String>,
 }
 
 impl BytecodeBuilder {
     pub fn new() -> Self {
         Self{
-            byte_pool: vec![0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B]
+            byte_pool: vec![0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B],
+            locals: vec![],
         }
     }
 
@@ -201,7 +204,7 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
-            Opcode::Load(index) => self.visit_load(index),
+            Opcode::Ldc(index) => self.visit_load(index),
             Opcode::Dump => self.visit_dump(),
             Opcode::Add => self.visit_add(),
             Opcode::Sub => self.visit_sub(),
@@ -210,6 +213,7 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Mod => self.visit_mod(),
             Opcode::Dup => self.visit_dup(),
             Opcode::Swp => self.visit_swp(),
+            Opcode::Store(index) => self.visit_store(index),
         }
     }
 

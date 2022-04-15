@@ -128,7 +128,7 @@ impl<'a> Loader<'a> {
                     // load
                     let index = self.read_data::<u32, 4>();
 
-                    instructions.push(Opcode::Load(index));
+                    instructions.push(Opcode::Ldc(index));
                 }
                 0x01 => {
                     // dump

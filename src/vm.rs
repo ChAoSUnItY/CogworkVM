@@ -149,7 +149,7 @@ impl Process {
     pub fn run(mut self) {
         while let Some(opcode) = self.get_instruction() {
             match opcode {
-                Opcode::Load(index) => {
+                Opcode::Ldc(index) => {
                     self.load(*index as usize);
                 }
                 Opcode::Dump => {
