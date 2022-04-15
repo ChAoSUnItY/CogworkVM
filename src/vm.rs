@@ -278,7 +278,7 @@ impl Process {
     }
 
     fn push(&mut self, items: &[Stackable]) {
-
+        self.stack.extend_from_slice(items);
     }
 
     fn check_stack_size(&self, required_size: usize) {
