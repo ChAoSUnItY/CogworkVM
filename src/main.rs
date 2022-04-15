@@ -1,7 +1,7 @@
 use cogwork::{bytecode::*, Loader, opcode::Opcode};
 
 fn main() {
-    let mut bytecode_builder = BytecodeBuilder::new(0);
+    let mut bytecode_builder = BytecodeBuilder::new(COMPUTE_LOCAL | COMPUTE_STACK);
     println!("{:?}", bytecode_builder);
     let mut constant_builder = bytecode_builder.visit_constant_pool();
     
@@ -15,8 +15,9 @@ fn main() {
     let mut instruction_builder = bytecode_builder.visit_code();
 
     instruction_builder.visit_ldc(4);
-    instruction_builder.visit_ldc(1);
-    instruction_builder.visit_swp();
+    instruction_builder.visit_store(0);
+    instruction_builder.visit_load(0);
+    instruction_builder.visit_dup();
     instruction_builder.visit_dump();
     instruction_builder.visit_opcode(Opcode::Dump);
 

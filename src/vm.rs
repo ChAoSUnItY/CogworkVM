@@ -1,4 +1,4 @@
-use std::{vec, fmt::{Debug, Write}, collections::HashMap, rc::Rc};
+use std::{vec, fmt::{Debug, Write}, collections::{HashMap, BTreeMap}, rc::Rc};
 
 use arrayvec::ArrayVec;
 use enum_index::EnumIndex;
@@ -125,21 +125,24 @@ impl Code {
 #[derive(Clone)]
 pub struct Process {
     vm: Rc<VM>,
+    code: Code,
     functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<Stackable>>>, // local functions
     stack: Vec<Stackable>,
-    local_variable: Vec<Stackable>,
+    local_variable: BTreeMap<u16, Stackable>,
     pos: usize,
 }
 
 impl Process {
     pub fn new_process(vm: VM, pos: usize) -> Self {
         let code = vm.code.clone();
+        let max_stack = code.max_stack;
 
         Self{
             vm: Rc::new(vm),
+            code,
             functions: HashMap::new(),
-            stack: Vec::with_capacity(code.max_stack as usize),
-            local_variable: Vec::with_capacity(code.max_local as usize),
+            stack: Vec::with_capacity(max_stack as usize),
+            local_variable: BTreeMap::new(),
             pos,
         }
     }
@@ -152,7 +155,7 @@ impl Process {
         while let Some(opcode) = self.get_instruction() {
             match *opcode {
                 Opcode::Ldc(index) => {
-                    self.load(index as usize);
+                    self.ldc(index as usize);
                 }
                 Opcode::Dump => {
                     self.dump();
@@ -181,13 +184,16 @@ impl Process {
                 Opcode::Store(index) => {
                     self.store(index as usize);
                 }
+                Opcode::Load(index) => {
+                    self.load(index as usize);
+                }
             }
 
             self.pos += 1;
         }
     }
 
-    pub fn load(&mut self, index: usize) {
+    pub fn ldc(&mut self, index: usize) {
         let constant = self.vm.constants.get(index);
 
         if let Some(c) = constant {
@@ -276,7 +282,15 @@ impl Process {
         self.check_stack_size(1);
 
         let stackable = self.stack.pop().unwrap();
-        self.local_variable[index] = stackable;
+        if self.local_variable.len() <= self.code.max_local.into() {
+            self.local_variable.insert(index as u16, stackable);
+        }
+    }
+
+    pub fn load(&mut self, index: usize) {
+        let stackable = self.local_variable.get(&(index as u16)).unwrap().clone();
+
+        self.stack.push(stackable);
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {

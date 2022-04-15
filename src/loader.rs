@@ -168,6 +168,12 @@ impl<'a> Loader<'a> {
 
                     instructions.push(Opcode::Store(index));
                 }
+                0x0A => {
+                    // load
+                    let index = self.read_data::<u16, 2>();
+
+                    instructions.push(Opcode::Load(index));
+                }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
         }

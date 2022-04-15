@@ -262,7 +262,7 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_max(&mut self, max_stack: u16, max_local: u16) {
         if self.parent_builder.compute_stack {
-            todo!()
+            // No need to do any operations
         } else {
             self.max_stack = max_stack;
         }
