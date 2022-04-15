@@ -163,9 +163,14 @@ pub struct InstructionBuilder<'a> {
 }
 
 impl<'a> InstructionBuilder<'a> {
-    pub fn visit_load(&mut self, index: u32) {
+    pub fn visit_ldc(&mut self, index: u32) {
         self.byte_pool.push(0x00);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        
+        if self.parent_builder.compute_stack {
+            self.max_stack += 1;
+        }
+
         self.count += 1;
     }
 
@@ -201,11 +206,17 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_dup(&mut self) {
         self.byte_pool.push(0x07);
+                
+        if self.parent_builder.compute_stack {
+            self.max_stack += 1;
+        }
+
         self.count += 1;
     }
 
     pub fn visit_swp(&mut self) {
         self.byte_pool.push(0x08);
+
         self.count += 1;
     }
 
@@ -213,12 +224,21 @@ impl<'a> InstructionBuilder<'a> {
         self.byte_pool.push(0x09);
         self.byte_pool.extend_from_slice(&index.to_be_bytes());
 
-        if self.parent_builder.compute_local {
-            if self.locals.len() == u16::MAX.into() {
-                panic!("Unable to add local variable: local variable size has reached hard limit (65535)")
-            }
+        if self.locals.len() == u16::MAX.into() {
+            panic!("Unable to add local variable: local variable size has reached hard limit (65535)")
+        }
 
-            self.locals.insert(index);
+        self.locals.insert(index);
+
+        self.count += 1;
+    }
+
+    pub fn visit_load(&mut self, index: u16) {
+        self.byte_pool.push(0x0A);
+        self.byte_pool.extend_from_slice(&index.to_be_bytes());
+                
+        if self.parent_builder.compute_stack {
+            self.max_stack += 1;
         }
 
         self.count += 1;
@@ -226,7 +246,7 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
-            Opcode::Ldc(index) => self.visit_load(index),
+            Opcode::Ldc(index) => self.visit_ldc(index),
             Opcode::Dump => self.visit_dump(),
             Opcode::Add => self.visit_add(),
             Opcode::Sub => self.visit_sub(),
@@ -236,6 +256,7 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Dup => self.visit_dup(),
             Opcode::Swp => self.visit_swp(),
             Opcode::Store(index) => self.visit_store(index),
+            Opcode::Load(index) => self.visit_load(index),
         }
     }
 

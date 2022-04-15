@@ -1,6 +1,6 @@
 #[derive(EnumIndex, Debug, Clone, Copy)]
 pub enum Opcode {
-    Ldc(u32),          // 0x00
+    Ldc(u32),           // 0x00
     Dump,               // 0x01
     Add,                // 0x02
     Sub,                // 0x03
@@ -10,4 +10,5 @@ pub enum Opcode {
     Dup,                // 0x07
     Swp,                // 0x08
     Store(u16),         // 0x09
+    Load(u16),          // 0x0A
 }

@@ -14,8 +14,8 @@ fn main() {
     constant_builder.visit_end();
     let mut instruction_builder = bytecode_builder.visit_code();
 
-    instruction_builder.visit_load(4);
-    instruction_builder.visit_load(1);
+    instruction_builder.visit_ldc(4);
+    instruction_builder.visit_ldc(1);
     instruction_builder.visit_swp();
     instruction_builder.visit_dump();
     instruction_builder.visit_opcode(Opcode::Dump);
