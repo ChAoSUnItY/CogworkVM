@@ -32,7 +32,7 @@ macro_rules! get_value {
     };
 }
 
-#[derive(EnumIndex, Clone)]
+#[derive(EnumIndex, Clone, PartialEq)]
 pub enum Stackable {
     Int(i32),
     Long(i64),
@@ -79,8 +79,9 @@ impl Debug for Stackable {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct FunctionSignature {
-    parameter_types: Vec<String>,
-    return_type: String,
+    function_name_index: u32,
+    parameter_size: u8,
+    return_stack_size: u8,
 }
 
 #[derive(Debug)]
@@ -121,7 +122,7 @@ impl Code {
 pub struct Process {
     vm: Rc<VM>,
     code: Code,
-    functions: HashMap<FunctionSignature, Rc<dyn FnMut(&mut Process) -> Option<Stackable>>>, // local functions
+    functions: HashMap<FunctionSignature, u32>,
     stack: Vec<Stackable>,
     local_variable: BTreeMap<u16, Stackable>,
     pos: u32,
@@ -145,7 +146,7 @@ impl Process {
         self.vm.code.instructions.get(self.pos as usize)
     } 
 
-    pub fn run(mut self) {
+    pub fn run(mut self) -> Vec<Stackable> {
         while let Some(opcode) = self.get_instruction() {
             let opcode = *opcode;
 
@@ -189,6 +190,12 @@ impl Process {
                 Opcode::Nop => {
                     // Do nothing code
                 }
+                Opcode::Func(function_name_index, parameter_size, return_stack_size) => {
+                    self.func(function_name_index, parameter_size, return_stack_size);
+                }
+                Opcode::Return => {
+                    return self.stack;
+                }
             }
 
             if opcode.enum_index() != 0x0B {
@@ -196,6 +203,8 @@ impl Process {
                 self.pos += 1;
             }
         }
+
+        vec![]
     }
 
     pub fn ldc(&mut self, index: usize) {
@@ -305,6 +314,10 @@ impl Process {
 
     pub fn goto(&mut self, index: u32) {
         self.pos = index;
+    }
+
+    pub fn func(&mut self, function_name_index: u32, parameter_size: u8, return_stack_size: u8) {
+        self.functions.insert(FunctionSignature { function_name_index, parameter_size, return_stack_size }, self.pos);
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {

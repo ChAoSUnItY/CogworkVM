@@ -1,4 +1,4 @@
-#[derive(EnumIndex, Debug, Clone, Copy)]
+#[derive(EnumIndex, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Opcode {
     Ldc(u32),           // 0x00
     Dump,               // 0x01

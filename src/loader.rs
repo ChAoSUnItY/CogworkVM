@@ -40,6 +40,12 @@ impl ConvertibleData<8> for f64 {
     }
 }
 
+impl ConvertibleData<1> for u8 {
+    fn from_be_bytes(from: [u8; 1]) -> Self {
+        u8::from_be_bytes(from)
+    }
+}
+
 impl ConvertibleData<2> for u16 {
     fn from_be_bytes(from: [u8; 2]) -> Self {
         u16::from_be_bytes(from)
@@ -181,6 +187,18 @@ impl<'a> Loader<'a> {
                 0x0C => {
                     // nop
                     instructions.push(Opcode::Nop);
+                }
+                0x0D => {
+                    // func
+                    let function_name_index = self.read_data::<u32, 4>();
+                    let parameter_size = self.read_data::<u8, 1>();
+                    let return_stack_size = self.read_data::<u8, 1>();
+
+                    instructions.push(Opcode::Func(function_name_index, parameter_size, return_stack_size));
+                }
+                0x0E => {
+                    // return
+                    instructions.push(Opcode::Return);
                 }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
