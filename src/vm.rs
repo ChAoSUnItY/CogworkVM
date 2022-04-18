@@ -1,4 +1,4 @@
-use std::{fmt::Debug, collections::{HashMap, BTreeMap}, rc::Rc};
+use std::{fmt::Debug, collections::{HashMap, BTreeMap}, rc::Rc, hash::Hash};
 
 use enum_index::EnumIndex;
 
@@ -81,7 +81,6 @@ impl Debug for Stackable {
 pub struct FunctionSignature {
     function_name_index: u32,
     parameter_size: u8,
-    return_stack_size: u8,
 }
 
 #[derive(Debug)]
@@ -142,6 +141,17 @@ impl Process {
         }
     }
 
+    pub fn subprocess(&mut self, pos: u32, parameters: Vec<Stackable>) -> Self {
+        Self{
+            vm: self.vm.clone(),
+            code: self.vm.code.clone(),
+            functions: self.functions.clone(),
+            stack: parameters,
+            local_variable: self.local_variable.clone(),
+            pos,
+        }
+    }
+
     fn get_instruction(&self) -> Option<&Opcode> {
         self.vm.code.instructions.get(self.pos as usize)
     } 
@@ -190,11 +200,14 @@ impl Process {
                 Opcode::Nop => {
                     // Do nothing code
                 }
-                Opcode::Func(function_name_index, parameter_size, return_stack_size) => {
-                    self.func(function_name_index, parameter_size, return_stack_size);
+                Opcode::Func(function_name_index, parameter_size) => {
+                    self.func(function_name_index, parameter_size);
                 }
                 Opcode::Return => {
                     return self.stack;
+                }
+                Opcode::Invoke(function_name_index, parameter_size) => {
+                    self.invoke(function_name_index, parameter_size);
                 }
             }
 
@@ -316,12 +329,56 @@ impl Process {
         self.pos = index;
     }
 
-    pub fn func(&mut self, function_name_index: u32, parameter_size: u8, return_stack_size: u8) {
-        self.functions.insert(FunctionSignature { function_name_index, parameter_size, return_stack_size }, self.pos);
+    pub fn func(&mut self, function_name_index: u32, parameter_size: u8) {
+        self.functions.insert(FunctionSignature { function_name_index, parameter_size }, self.pos + 1);
+
+        let mut func_level = 0;
+
+        self.pos += 1;
+
+        // Set current pos to nearest paired return opcode
+        while let Some(opcode) = self.get_instruction() {
+            match opcode {
+                Opcode::Func(_, _) => {
+                    func_level += 1;
+                }
+                Opcode::Return => {
+                    if func_level == 0 {
+                        break;
+                    } else {
+                        func_level -= 1;
+                    }
+                }
+                _ => {}
+            }
+
+            self.pos += 1;
+        }
     }
 
     pub fn r#return(&mut self) -> Option<Stackable> {
         return self.stack.pop();
+    }
+
+    pub fn invoke(&mut self, function_name_index: u32, parameter_size: u8) {
+        let function_initial_pos = self.functions.get(&FunctionSignature { function_name_index, parameter_size }).cloned();
+
+        if let Some(pos) = function_initial_pos {
+            self.check_stack_size(parameter_size as usize);
+
+            let enter_pos = self.pos;
+            let parameter_stack = self.pop(parameter_size as usize);
+
+            let proc = self.subprocess(pos, parameter_stack);
+
+            let mut return_value = proc.run();
+
+            self.stack.append(&mut return_value);
+
+            self.pos = enter_pos;
+        } else {
+            panic!("Unknown function {:?} with {} parameters", self.vm.constants.get(function_name_index as usize).unwrap_or(&Stackable::String("<Unknown function name>".to_string())), parameter_size);
+        }
     }
 
     fn pop(&mut self, pop_size: usize) -> Vec<Stackable> {
