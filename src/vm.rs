@@ -1,6 +1,5 @@
-use std::{vec, fmt::{Debug, Write}, collections::{HashMap, BTreeMap}, rc::Rc};
+use std::{fmt::Debug, collections::{HashMap, BTreeMap}, rc::Rc};
 
-use arrayvec::ArrayVec;
 use enum_index::EnumIndex;
 
 use crate::opcode::Opcode;
@@ -272,8 +271,8 @@ impl Process {
     pub fn dup(&mut self) {
         self.check_stack_size(1);
 
-        let stackable = self.stack.last().unwrap();
-        self.stack.push(stackable.clone());    
+        let stackable = self.stack.last().unwrap().clone();
+        self.stack.push(stackable);
     }
 
     pub fn swp(&mut self) {
