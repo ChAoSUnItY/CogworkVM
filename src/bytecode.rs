@@ -5,17 +5,17 @@ use crate::vm::Stackable;
 use super::opcode::Opcode;
 
 /// # Format summary: </br>
-/// 
+///
 /// ## Overview: </br>
 /// Header - Constant Pool - Code </br>
-/// 
+///
 /// ## Header: </br>
 /// \[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B\]  <-- Magic number: `GEARWORK` </br>
-/// 
+///
 /// ## Constant Pool: </br>
 /// \[\[u8; 4\], \[u8; cp_size\]\] <-- First 4 bytes indicates how many constants </br>
 ///                                    cp_size: Size of constant pool, based on constant entries </br>
-/// 
+///
 /// ### Available Constant Formats: </br>
 /// \[0x00, \[u8; 4\]\] <-- Integer constant </br>
 /// \[0x01, \[u8; 8\]\] <-- Long constant </br>
@@ -23,15 +23,15 @@ use super::opcode::Opcode;
 /// \[0x03, \[u8; 8\]\] <-- Double constant </br>
 /// \[0x04, \[u8; 8\], \[u8; s_size\]\] <-- String constant, bytes at [1..4]/[1..8] indicates string bytes' len </br>
 ///                                         s_size: Size of string bytes </br>
-/// 
+///
 /// ## Code: </br>
 /// \[\[u8; 4\],\[u8; c_size\]\] <-- Represents instructions, the first 4 bytes indicates instruction length.
 ///                                  c_size: Size of instructions </br>
-/// 
+///
 /// ## Instructions: </br>
 /// \[opcode, \[u8; f_size\]\] <-- Instruction, as known as opcode, followed bytes size is based on instruction </br>
 ///                                f_size: Size of followed bytes, based on instruction </br>
-/// 
+///
 /// ## Instruction Set: </br>
 /// | Opcode name   | Opcode index  | Followed bytes    | Description | Note |
 /// |---------------|---------------|-------------------|-------------|------|
@@ -49,21 +49,21 @@ use super::opcode::Opcode;
 /// | goto          | 0x0B          | u8, u8, u8, u8    | Jump to target instruction index ||
 /// | nop           | 0x0C          |                   | Do nothing code ||
 /// | func          | 0x0D          | u8, u8, u8, u8    | Create a function and enter function scope | The first 2 bytes indicate index of the function name stored in constant pool, the later 2 bytes indicate parameter size and return stack size, respectively. |
-/// 
+///
 /// Bytecode manipulation library summary:
-/// 
+///
 /// ## Bytecode builder
-/// 
+///
 /// > The primary bytecode builder, used as an bytecode holder.
-/// 
+///
 /// ## Constant builder
-/// 
+///
 /// > The bytecode builder for constant pool.
-/// 
+///
 /// ### Will remove after library has better way to handle it (or change visibility into internal)
-/// 
+///
 /// ## Instruction builder
-/// 
+///
 /// > The bytecode builder for code.
 #[derive(Debug)]
 pub struct BytecodeBuilder {
@@ -72,13 +72,13 @@ pub struct BytecodeBuilder {
 
 impl BytecodeBuilder {
     pub fn new() -> Self {
-        Self{
+        Self {
             byte_pool: vec![0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B],
         }
     }
 
     pub(crate) fn visit_constant_pool(&mut self) -> ConstantBuilder {
-        ConstantBuilder{
+        ConstantBuilder {
             parent_builder: self,
             count: 0,
             byte_pool: vec![],
@@ -86,7 +86,7 @@ impl BytecodeBuilder {
     }
 
     pub fn visit_code(&mut self) -> InstructionBuilder {
-        InstructionBuilder{
+        InstructionBuilder {
             parent_builder: self,
             generated_constants: vec![],
             labels: vec![],
@@ -104,7 +104,7 @@ impl BytecodeBuilder {
 pub struct ConstantBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
     count: u32,
-    byte_pool: Vec<u8>
+    byte_pool: Vec<u8>,
 }
 
 impl<'a> ConstantBuilder<'a> {
@@ -136,7 +136,8 @@ impl<'a> ConstantBuilder<'a> {
         let string_bytes = string.as_bytes();
 
         self.byte_pool.push(0x04);
-        self.byte_pool.extend_from_slice(&string_bytes.len().to_be_bytes());
+        self.byte_pool
+            .extend_from_slice(&string_bytes.len().to_be_bytes());
         self.byte_pool.extend_from_slice(&string_bytes);
         self.count += 1;
     }
@@ -160,7 +161,9 @@ impl<'a> ConstantBuilder<'a> {
     }
 
     pub fn visit_end(mut self) {
-        self.parent_builder.byte_pool.extend_from_slice(&self.count.to_be_bytes()[..]);
+        self.parent_builder
+            .byte_pool
+            .extend_from_slice(&self.count.to_be_bytes()[..]);
         self.parent_builder.byte_pool.append(&mut self.byte_pool);
     }
 }
@@ -180,13 +183,17 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_ldc(&mut self, stackable: Stackable) {
         self.byte_pool.push(0x00);
-        
-        let constant_index = self.generated_constants.iter().position(|s| *s == stackable);
+
+        let constant_index = self
+            .generated_constants
+            .iter()
+            .position(|s| *s == stackable);
 
         // Check if constant pool has function name
         if let Some(index) = constant_index {
             // Copy the index of function name's constant in constant pool
-            self.byte_pool.extend_from_slice(&(index as u32).to_be_bytes());
+            self.byte_pool
+                .extend_from_slice(&(index as u32).to_be_bytes());
         } else {
             // Generate constant for function name
             let index = self.generated_constants.len() as u32;
@@ -250,15 +257,11 @@ impl<'a> InstructionBuilder<'a> {
     }
 
     pub fn visit_label(&mut self, label: &'a RefCell<Label>) {
-        *label.borrow_mut() = Label{
-            pos: self.pos,
-        }
+        *label.borrow_mut() = Label { pos: self.pos }
     }
 
     pub fn make_label(&self) -> RefCell<Label> {
-        RefCell::new(Label {
-            pos: 0
-        })
+        RefCell::new(Label { pos: 0 })
     }
 
     pub fn visit_goto(&mut self, label: &'a RefCell<Label>) {
@@ -289,15 +292,18 @@ impl<'a> InstructionBuilder<'a> {
         // Check if constant pool has function name
         if let Some(index) = constant_index {
             // Copy the index of function name's constant in constant pool
-            self.byte_pool.extend_from_slice(&(index as u32).to_be_bytes());
+            self.byte_pool
+                .extend_from_slice(&(index as u32).to_be_bytes());
         } else {
             // Generate constant for function name
             let index = self.generated_constants.len() as u32;
-            self.generated_constants.push(Stackable::String(function_name.to_string()));
+            self.generated_constants
+                .push(Stackable::String(function_name.to_string()));
             self.byte_pool.extend_from_slice(&index.to_be_bytes());
         }
 
-        self.byte_pool.extend_from_slice(&parameter_size.to_be_bytes());
+        self.byte_pool
+            .extend_from_slice(&parameter_size.to_be_bytes());
         self.advance();
     }
 
@@ -314,7 +320,8 @@ impl<'a> InstructionBuilder<'a> {
 
         if let Some(index) = name_index {
             self.byte_pool.push(0x0F);
-            self.byte_pool.extend_from_slice(&(index as u32).to_be_bytes());
+            self.byte_pool
+                .extend_from_slice(&(index as u32).to_be_bytes());
             self.byte_pool.push(parameter_size);
             self.advance();
         } else {
@@ -324,7 +331,9 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
-            Opcode::Ldc(_) => unimplemented!("Use InstructionBuilder::visit_ldc(Stackable) instead"),
+            Opcode::Ldc(_) => {
+                unimplemented!("Use InstructionBuilder::visit_ldc(Stackable) instead")
+            }
             Opcode::Dump => self.visit_dump(),
             Opcode::Add => self.visit_add(),
             Opcode::Sub => self.visit_sub(),
@@ -335,13 +344,15 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Swp => self.visit_swp(),
             Opcode::Store(index) => self.visit_store(index),
             Opcode::Load(index) => self.visit_load(index),
-            Opcode::Goto(index) => self.visit_goto_labeled(Label{
-                pos: index
-            }),
+            Opcode::Goto(index) => self.visit_goto_labeled(Label { pos: index }),
             Opcode::Nop => self.visit_nop(),
-            Opcode::Func(_, _) => unimplemented!("Use InstructionBuilder::visit_func(&'a str, u8) instead"),
+            Opcode::Func(_, _) => {
+                unimplemented!("Use InstructionBuilder::visit_func(&'a str, u8) instead")
+            }
             Opcode::Return => self.visit_return(),
-            Opcode::Invoke(_, _) => unimplemented!("Use InstructionBuilder::visit_invoke(&'a str) instead"),
+            Opcode::Invoke(_, _) => {
+                unimplemented!("Use InstructionBuilder::visit_invoke(&'a str) instead")
+            }
         }
     }
 
@@ -365,7 +376,7 @@ impl<'a> InstructionBuilder<'a> {
         }
 
         final_byte_pool.extend_from_slice(&byte_pool[previous_index..]);
-        
+
         // Emit constants
         let mut constant_builder = self.parent_builder.visit_constant_pool();
 
@@ -382,12 +393,14 @@ impl<'a> InstructionBuilder<'a> {
         constant_builder.visit_end();
 
         // Push instructions
-        self.parent_builder.byte_pool.extend_from_slice(&self.pos.to_be_bytes());
+        self.parent_builder
+            .byte_pool
+            .extend_from_slice(&self.pos.to_be_bytes());
         self.parent_builder.byte_pool.append(&mut final_byte_pool);
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Label {
-    pos: u32
+    pos: u32,
 }

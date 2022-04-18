@@ -4,8 +4,8 @@ extern crate enum_index_derive;
 extern crate arrayvec;
 
 pub mod bytecode;
-pub mod vm;
-pub mod opcode;
 pub(crate) mod loader;
+pub mod opcode;
+pub mod vm;
 
 pub use loader::Loader;

@@ -1,4 +1,9 @@
-use std::{fmt::Debug, collections::{HashMap, BTreeMap}, rc::Rc, hash::Hash};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt::Debug,
+    hash::Hash,
+    rc::Rc,
+};
 
 use enum_index::EnumIndex;
 
@@ -16,7 +21,11 @@ macro_rules! make_stackable {
     };
 
     ($precedence:expr, $expr1:expr, $expr2:expr) => {
-        (make_stackable!($precedence, $expr1), make_stackable!($precedence, $expr2), $precedence)
+        (
+            make_stackable!($precedence, $expr1),
+            make_stackable!($precedence, $expr2),
+            $precedence,
+        )
     };
 }
 
@@ -48,19 +57,33 @@ impl Stackable {
             Self::Long(_) => 1,
             Self::Float(_) => 2,
             Self::Double(_) => 3,
-            Self::String(_) => panic!("String cannot be promoted.")
+            Self::String(_) => panic!("String cannot be promoted."),
         }
     }
 
-    pub(crate) fn promote(stackable1: Stackable, stackable2: Stackable) -> (Stackable, Stackable, i8) {
-        let (left_precedence, right_precedence) = (stackable1.promotion_precedence(), stackable2.promotion_precedence());
-        
+    pub(crate) fn promote(
+        stackable1: Stackable,
+        stackable2: Stackable,
+    ) -> (Stackable, Stackable, i8) {
+        let (left_precedence, right_precedence) = (
+            stackable1.promotion_precedence(),
+            stackable2.promotion_precedence(),
+        );
+
         if left_precedence == right_precedence {
-            make_stackable!(left_precedence, get_value!(stackable1), get_value!(stackable2))
+            make_stackable!(
+                left_precedence,
+                get_value!(stackable1),
+                get_value!(stackable2)
+            )
         } else {
             let max_precedence = std::cmp::max(left_precedence, right_precedence);
 
-            make_stackable!(max_precedence, get_value!(stackable1), get_value!(stackable2))
+            make_stackable!(
+                max_precedence,
+                get_value!(stackable1),
+                get_value!(stackable2)
+            )
         }
     }
 }
@@ -91,10 +114,7 @@ pub struct VM {
 
 impl VM {
     pub fn new_vm(constants: Vec<Stackable>, code: Code) -> Self {
-        VM{
-            constants,
-            code
-        }
+        VM { constants, code }
     }
 
     pub fn execute(self) {
@@ -106,14 +126,12 @@ impl VM {
 
 #[derive(Debug, Clone)]
 pub struct Code {
-    instructions: Vec<Opcode>
+    instructions: Vec<Opcode>,
 }
 
 impl Code {
     pub fn new(instructions: Vec<Opcode>) -> Self {
-        Self{
-            instructions,
-        }
+        Self { instructions }
     }
 }
 
@@ -131,7 +149,7 @@ impl Process {
     pub fn new_process(vm: VM, pos: u32) -> Self {
         let code = vm.code.clone();
 
-        Self{
+        Self {
             vm: Rc::new(vm),
             code,
             functions: HashMap::new(),
@@ -142,7 +160,7 @@ impl Process {
     }
 
     pub fn subprocess(&mut self, pos: u32, parameters: Vec<Stackable>) -> Self {
-        Self{
+        Self {
             vm: self.vm.clone(),
             code: self.vm.code.clone(),
             functions: self.functions.clone(),
@@ -154,7 +172,7 @@ impl Process {
 
     fn get_instruction(&self) -> Option<&Opcode> {
         self.vm.code.instructions.get(self.pos as usize)
-    } 
+    }
 
     pub fn run(mut self) -> Vec<Stackable> {
         while let Some(opcode) = self.get_instruction() {
@@ -242,50 +260,50 @@ impl Process {
 
     pub fn add(&mut self) {
         if let [right, left] = &self.pop(2)[..] {
-            let (promoted_right, promoted_left, precedence) = 
+            let (promoted_right, promoted_left, precedence) =
                 Stackable::promote(right.clone(), left.clone());
             let result_value = get_value!(promoted_left) + get_value!(promoted_right);
-    
+
             self.stack.push(make_stackable!(precedence, result_value));
         }
     }
 
     pub fn sub(&mut self) {
         if let [right, left] = &self.pop(2)[..] {
-            let (promoted_right, promoted_left, precedence) = 
+            let (promoted_right, promoted_left, precedence) =
                 Stackable::promote(right.clone(), left.clone());
             let result_value = get_value!(promoted_left) - get_value!(promoted_right);
-    
+
             self.stack.push(make_stackable!(precedence, result_value));
         }
     }
 
     pub fn mul(&mut self) {
         if let [right, left] = &self.pop(2)[..] {
-            let (promoted_right, promoted_left, precedence) = 
+            let (promoted_right, promoted_left, precedence) =
                 Stackable::promote(right.clone(), left.clone());
             let result_value = get_value!(promoted_left) * get_value!(promoted_right);
-    
+
             self.stack.push(make_stackable!(precedence, result_value));
         }
     }
 
     pub fn div(&mut self) {
         if let [right, left] = &self.pop(2)[..] {
-            let (promoted_right, promoted_left, precedence) = 
+            let (promoted_right, promoted_left, precedence) =
                 Stackable::promote(right.clone(), left.clone());
             let result_value = get_value!(promoted_left) / get_value!(promoted_right);
-    
+
             self.stack.push(make_stackable!(precedence, result_value));
         }
     }
 
     pub fn r#mod(&mut self) {
         if let [right, left] = &self.pop(2)[..] {
-            let (promoted_right, promoted_left, precedence) = 
+            let (promoted_right, promoted_left, precedence) =
                 Stackable::promote(right.clone(), left.clone());
             let result_value = get_value!(promoted_left) % get_value!(promoted_right);
-    
+
             self.stack.push(make_stackable!(precedence, result_value));
         }
     }
@@ -330,7 +348,13 @@ impl Process {
     }
 
     pub fn func(&mut self, function_name_index: u32, parameter_size: u8) {
-        self.functions.insert(FunctionSignature { function_name_index, parameter_size }, self.pos + 1);
+        self.functions.insert(
+            FunctionSignature {
+                function_name_index,
+                parameter_size,
+            },
+            self.pos + 1,
+        );
 
         let mut func_level = 0;
 
@@ -361,7 +385,13 @@ impl Process {
     }
 
     pub fn invoke(&mut self, function_name_index: u32, parameter_size: u8) {
-        let function_initial_pos = self.functions.get(&FunctionSignature { function_name_index, parameter_size }).cloned();
+        let function_initial_pos = self
+            .functions
+            .get(&FunctionSignature {
+                function_name_index,
+                parameter_size,
+            })
+            .cloned();
 
         if let Some(pos) = function_initial_pos {
             self.check_stack_size(parameter_size as usize);
@@ -377,12 +407,19 @@ impl Process {
 
             self.pos = enter_pos;
         } else {
-            panic!("Unknown function {:?} with {} parameters", self.vm.constants.get(function_name_index as usize).unwrap_or(&Stackable::String("<Unknown function name>".to_string())), parameter_size);
+            panic!(
+                "Unknown function {:?} with {} parameters",
+                self.vm
+                    .constants
+                    .get(function_name_index as usize)
+                    .unwrap_or(&Stackable::String("<Unknown function name>".to_string())),
+                parameter_size
+            );
         }
     }
 
     fn pop(&mut self, pop_size: usize) -> Vec<Stackable> {
-        self.check_stack_size(2);
+        self.check_stack_size(pop_size);
 
         self.stack.drain(self.stack.len() - pop_size..).collect()
     }
@@ -393,7 +430,11 @@ impl Process {
 
     fn check_stack_size(&self, required_size: usize) {
         if self.stack.len() < required_size {
-            panic!("Unable to perform addition, requires {}+ items on stack but got {}", required_size, self.stack.len());
+            panic!(
+                "Unable to perform addition, requires {}+ items on stack but got {}",
+                required_size,
+                self.stack.len()
+            );
         }
     }
 }

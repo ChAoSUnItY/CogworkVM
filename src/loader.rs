@@ -1,14 +1,17 @@
 use std::{slice::Iter, str};
 
-use crate::{vm::{VM, Stackable, Code}, opcode::Opcode};
+use crate::{
+    opcode::Opcode,
+    vm::{Code, Stackable, VM},
+};
 
 trait ConvertibleData<const COUNT: usize> {
-    fn take_convert<'a>(iter: &mut impl Iterator<Item = &'a u8>) -> Self where Self: Sized {
+    fn take_convert<'a>(iter: &mut impl Iterator<Item = &'a u8>) -> Self
+    where
+        Self: Sized,
+    {
         let mut container = [0u8; COUNT];
-        let sliced_bits = &iter.by_ref()
-            .take(COUNT)
-            .map(|u| *u)
-            .collect::<Vec<u8>>()[..];
+        let sliced_bits = &iter.by_ref().take(COUNT).map(|u| *u).collect::<Vec<u8>>()[..];
         container.copy_from_slice(sliced_bits);
         Self::from_be_bytes(container)
     }
@@ -65,13 +68,13 @@ impl ConvertibleData<8> for u64 {
 }
 
 pub struct Loader<'a> {
-    bytecode: Iter<'a, u8>
+    bytecode: Iter<'a, u8>,
 }
 
 impl<'a> Loader<'a> {
     pub fn new(bytecode: &'a Vec<u8>) -> Self {
-        Self{
-            bytecode: bytecode.iter()
+        Self {
+            bytecode: bytecode.iter(),
         }
     }
 
@@ -216,10 +219,9 @@ impl<'a> Loader<'a> {
     fn validate_header(&mut self) {
         let header = &self.read(8);
         if header != &[0x47, 0x45, 0x41, 0x52, 0x57, 0x4F, 0x52, 0x4B] {
-            panic!("Invalid header, should be `GEARWORK` (ascii form), but got `{}` (ascii form)", 
-                header.iter()
-                    .map(|u| *u as char)
-                    .collect::<String>()
+            panic!(
+                "Invalid header, should be `GEARWORK` (ascii form), but got `{}` (ascii form)",
+                header.iter().map(|u| *u as char).collect::<String>()
             );
         }
     }
@@ -232,7 +234,10 @@ impl<'a> Loader<'a> {
         self.bytecode.by_ref().take(n).map(|u| *u).collect()
     }
 
-    fn read_data<CD, const COUNT: usize>(&mut self) -> CD where CD: ConvertibleData<COUNT> {
+    fn read_data<CD, const COUNT: usize>(&mut self) -> CD
+    where
+        CD: ConvertibleData<COUNT>,
+    {
         CD::take_convert(&mut self.bytecode)
     }
 }
