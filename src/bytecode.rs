@@ -278,7 +278,7 @@ impl<'a> InstructionBuilder<'a> {
         self.advance();
     }
 
-    pub fn visit_func(&mut self, function_name: &'a str, parameter_size: u8, return_stack_size: u8) {
+    pub fn visit_func(&mut self, function_name: &'a str, parameter_size: u8) {
         self.byte_pool.push(0x0D);
 
         let constant_index = self.generated_constants.iter().position(|s| match s {
@@ -298,13 +298,27 @@ impl<'a> InstructionBuilder<'a> {
         }
 
         self.byte_pool.extend_from_slice(&parameter_size.to_be_bytes());
-        self.byte_pool.extend_from_slice(&return_stack_size.to_be_bytes());
         self.advance();
     }
 
     pub fn visit_return(&mut self) {
         self.byte_pool.push(0x0E);
         self.advance();
+    }
+
+    pub fn visit_invoke(&mut self, function_name: &'a str) {
+        let name_index = self.generated_constants.iter().position(|s| match s {
+            Stackable::String(name) => name == function_name,
+            _ => false,
+        });
+
+        if let Some(index) = name_index {
+            self.byte_pool.push(0x0F);
+            self.byte_pool.extend_from_slice(&(index as u32).to_be_bytes());
+            self.advance();
+        } else {
+            panic!("Undeclared function name {}", function_name);
+        }
     }
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
@@ -324,8 +338,9 @@ impl<'a> InstructionBuilder<'a> {
                 pos: index
             }),
             Opcode::Nop => self.visit_nop(),
-            Opcode::Func(_, _, _) => unimplemented!("Use InstructionBuilder::visit_func(&'a str, u8, u8) instead"),
+            Opcode::Func(_, _) => unimplemented!("Use InstructionBuilder::visit_func(&'a str, u8) instead"),
             Opcode::Return => self.visit_return(),
+            Opcode::Invoke(_) => unimplemented!("Use InstructionBuilder::visit_invoke(&'a str) instead"),
         }
     }
 
