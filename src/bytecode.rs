@@ -178,9 +178,22 @@ impl<'a> InstructionBuilder<'a> {
         self.pos += 1;
     }
 
-    pub fn visit_ldc(&mut self, index: u32) {
+    pub fn visit_ldc(&mut self, stackable: Stackable) {
         self.byte_pool.push(0x00);
-        self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        
+        let constant_index = self.generated_constants.iter().position(|s| *s == stackable);
+
+        // Check if constant pool has function name
+        if let Some(index) = constant_index {
+            // Copy the index of function name's constant in constant pool
+            self.byte_pool.extend_from_slice(&(index as u32).to_be_bytes());
+        } else {
+            // Generate constant for function name
+            let index = self.generated_constants.len() as u32;
+            self.generated_constants.push(stackable);
+            self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        }
+
         self.advance();
     }
 
@@ -296,7 +309,7 @@ impl<'a> InstructionBuilder<'a> {
 
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
-            Opcode::Ldc(index) => self.visit_ldc(index),
+            Opcode::Ldc(_) => unimplemented!("Use InstructionBuilder::visit_ldc(Stackable) instead"),
             Opcode::Dump => self.visit_dump(),
             Opcode::Add => self.visit_add(),
             Opcode::Sub => self.visit_sub(),
