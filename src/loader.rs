@@ -192,13 +192,19 @@ impl<'a> Loader<'a> {
                     // func
                     let function_name_index = self.read_data::<u32, 4>();
                     let parameter_size = self.read_data::<u8, 1>();
-                    let return_stack_size = self.read_data::<u8, 1>();
 
-                    instructions.push(Opcode::Func(function_name_index, parameter_size, return_stack_size));
+                    instructions.push(Opcode::Func(function_name_index, parameter_size));
                 }
                 0x0E => {
                     // return
                     instructions.push(Opcode::Return);
+                }
+                0x0F => {
+                    // invoke
+                    let function_name = self.read_data::<u32, 4>();
+                    let parameter_size = self.read_data::<u8, 1>();
+
+                    instructions.push(Opcode::Invoke(function_name, parameter_size));
                 }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
