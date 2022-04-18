@@ -20,6 +20,19 @@ fn main() {
     instruction_builder.visit_invoke("add", 2);
     instruction_builder.visit_dump();
     instruction_builder.visit_return();
+    
+    /*
+     * This section of code equivalents to the following py code
+     * 
+     * ```py
+     * def add(x, y):
+     *     def mul(z):
+     *         return z * 90
+     *     return mul(x + y)
+     * 
+     * add(10, 10)
+     * ```
+     */
 
     instruction_builder.visit_end();
     // Build bytecode
