@@ -13,4 +13,6 @@ pub enum Opcode {
     Load(u16),          // 0x0A
     Goto(u32),          // 0x0B
     Nop,                // 0x0C
+    Func(u32, u8, u8),  // 0x0D
+    Return,             // 0x0E
 }

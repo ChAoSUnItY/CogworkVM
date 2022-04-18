@@ -1,5 +1,7 @@
 use std::{any::Any, cell::RefCell};
 
+use crate::vm::Stackable;
+
 use super::opcode::Opcode;
 
 /// # Format summary: </br>
@@ -46,6 +48,23 @@ use super::opcode::Opcode;
 /// | load          | 0x0A          | u8, u8            | Load a local variable onto stack ||
 /// | goto          | 0x0B          | u8, u8, u8, u8    | Jump to target instruction index ||
 /// | nop           | 0x0C          |                   | Do nothing code ||
+/// | func          | 0x0D          | u8, u8, u8, u8    | Create a function and enter function scope | The first 2 bytes indicate index of the function name stored in constant pool, the later 2 bytes indicate parameter size and return stack size, respectively. |
+/// 
+/// Bytecode manipulation library summary:
+/// 
+/// ## Bytecode builder
+/// 
+/// > The primary bytecode builder, used as an bytecode holder.
+/// 
+/// ## Constant builder
+/// 
+/// > The bytecode builder for constant pool.
+/// 
+/// ### Will remove after library has better way to handle it (or change visibility into internal)
+/// 
+/// ## Instruction builder
+/// 
+/// > The bytecode builder for code.
 #[derive(Debug)]
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
@@ -58,7 +77,7 @@ impl BytecodeBuilder {
         }
     }
 
-    pub fn visit_constant_pool(&mut self) -> ConstantBuilder {
+    pub(crate) fn visit_constant_pool(&mut self) -> ConstantBuilder {
         ConstantBuilder{
             parent_builder: self,
             count: 0,
@@ -69,6 +88,7 @@ impl BytecodeBuilder {
     pub fn visit_code(&mut self) -> InstructionBuilder {
         InstructionBuilder{
             parent_builder: self,
+            generated_constants: vec![],
             labels: vec![],
             byte_pool: vec![],
             pos: 0,
@@ -147,6 +167,7 @@ impl<'a> ConstantBuilder<'a> {
 
 pub struct InstructionBuilder<'a> {
     parent_builder: &'a mut BytecodeBuilder,
+    generated_constants: Vec<Stackable>,
     labels: Vec<(u32, &'a RefCell<Label>)>,
     byte_pool: Vec<u8>,
     pos: u32,
@@ -244,6 +265,35 @@ impl<'a> InstructionBuilder<'a> {
         self.advance();
     }
 
+    pub fn visit_func(&mut self, function_name: &'a str, parameter_size: u8, return_stack_size: u8) {
+        self.byte_pool.push(0x0D);
+
+        let constant_index = self.generated_constants.iter().position(|s| match s {
+            Stackable::String(name) => name == function_name,
+            _ => false,
+        });
+
+        // Check if constant pool has function name
+        if let Some(index) = constant_index {
+            // Copy the index of function name's constant in constant pool
+            self.byte_pool.extend_from_slice(&(index as u32).to_be_bytes());
+        } else {
+            // Generate constant for function name
+            let index = self.generated_constants.len() as u32;
+            self.generated_constants.push(Stackable::String(function_name.to_string()));
+            self.byte_pool.extend_from_slice(&index.to_be_bytes());
+        }
+
+        self.byte_pool.extend_from_slice(&parameter_size.to_be_bytes());
+        self.byte_pool.extend_from_slice(&return_stack_size.to_be_bytes());
+        self.advance();
+    }
+
+    pub fn visit_return(&mut self) {
+        self.byte_pool.push(0x0E);
+        self.advance();
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Ldc(index) => self.visit_ldc(index),
@@ -261,10 +311,13 @@ impl<'a> InstructionBuilder<'a> {
                 pos: index
             }),
             Opcode::Nop => self.visit_nop(),
+            Opcode::Func(_, _, _) => unimplemented!("Use InstructionBuilder::visit_func(&'a str, u8, u8) instead"),
+            Opcode::Return => self.visit_return(),
         }
     }
 
     pub fn visit_end(self) {
+        // Insert label position for `goto` opcode
         let byte_pool = self.byte_pool;
         let mut final_byte_pool = vec![];
         let mut previous_index = 0;
@@ -284,6 +337,22 @@ impl<'a> InstructionBuilder<'a> {
 
         final_byte_pool.extend_from_slice(&byte_pool[previous_index..]);
         
+        // Emit constants
+        let mut constant_builder = self.parent_builder.visit_constant_pool();
+
+        for constant in self.generated_constants {
+            match constant {
+                Stackable::Int(int) => constant_builder.visit_integer(int),
+                Stackable::Long(long) => constant_builder.visit_long(long),
+                Stackable::Float(float) => constant_builder.visit_float(float),
+                Stackable::Double(double) => constant_builder.visit_double(double),
+                Stackable::String(string) => constant_builder.visit_string(string),
+            }
+        }
+
+        constant_builder.visit_end();
+
+        // Push instructions
         self.parent_builder.byte_pool.extend_from_slice(&self.pos.to_be_bytes());
         self.parent_builder.byte_pool.append(&mut final_byte_pool);
     }
