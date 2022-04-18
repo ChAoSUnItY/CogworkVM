@@ -3,8 +3,7 @@ use cogwork::{bytecode::*, Loader, opcode::Opcode};
 fn main() {
     // Emit bytecode
     let mut bytecode_builder = BytecodeBuilder::new();
-
-    constant_builder.visit_end();
+    
     // Emit instructions
     let mut instruction_builder = bytecode_builder.visit_code();
 
