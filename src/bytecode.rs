@@ -45,6 +45,7 @@ use super::opcode::Opcode;
 /// | store         | 0x09          | u8, u8            | Pop and store top item from stack to local variable ||
 /// | load          | 0x0A          | u8, u8            | Load a local variable onto stack ||
 /// | goto          | 0x0B          | u8, u8, u8, u8    | Jump to target instruction index ||
+/// | nop           | 0x0C          |                   | Do nothing code ||
 #[derive(Debug)]
 pub struct BytecodeBuilder {
     byte_pool: Vec<u8>,
@@ -238,6 +239,11 @@ impl<'a> InstructionBuilder<'a> {
         self.advance();
     }
 
+    pub fn visit_nop(&mut self) {
+        self.byte_pool.push(0x0C);
+        self.advance();
+    }
+
     pub fn visit_opcode(&mut self, opcode: Opcode) {
         match opcode {
             Opcode::Ldc(index) => self.visit_ldc(index),
@@ -254,6 +260,7 @@ impl<'a> InstructionBuilder<'a> {
             Opcode::Goto(index) => self.visit_goto_labeled(Label{
                 pos: index
             }),
+            Opcode::Nop => self.visit_nop(),
         }
     }
 

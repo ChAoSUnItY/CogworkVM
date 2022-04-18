@@ -178,6 +178,10 @@ impl<'a> Loader<'a> {
 
                     instructions.push(Opcode::Goto(index));
                 }
+                0x0C => {
+                    // nop
+                    instructions.push(Opcode::Nop);
+                }
                 opcode @ _ => panic!("Unexpected opcode {:#04X?}", opcode),
             }
         }

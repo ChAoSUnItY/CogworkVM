@@ -187,6 +187,9 @@ impl Process {
                 Opcode::Goto(index) => {
                     self.goto(index);
                 }
+                Opcode::Nop => {
+                    // Do nothing code
+                }
             }
 
             if opcode.enum_index() != 0x0B {
