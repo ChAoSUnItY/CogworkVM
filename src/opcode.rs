@@ -15,5 +15,5 @@ pub enum Opcode {
     Nop,            // 0x0C
     Func(u32, u8),  // 0x0D
     Return,         // 0x0E
-    Invoke(u32),    // 0x0F
+    Invoke(u32, u8),// 0x0F
 }
