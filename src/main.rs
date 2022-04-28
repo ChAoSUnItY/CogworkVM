@@ -9,15 +9,21 @@ fn main() {
 
     instruction_builder.visit_ldc(Stackable::Int(10));
     instruction_builder.visit_dup();
-    instruction_builder.visit_func("add", 2);
-    instruction_builder.visit_func("mul", 1);
-    instruction_builder.visit_ldc(Stackable::Int(90));
-    instruction_builder.visit_mul();
-    instruction_builder.visit_return();
-    instruction_builder.visit_add();
-    instruction_builder.visit_invoke("mul", 1);
-    instruction_builder.visit_return();
-    instruction_builder.visit_invoke("add", 2);
+    instruction_builder.visit_store(0); // a
+    {
+        instruction_builder.visit_func("add", 1);
+        {
+            instruction_builder.visit_func("mul", 1);
+            instruction_builder.visit_ldc(Stackable::Int(90));
+            instruction_builder.visit_mul();
+            instruction_builder.visit_return();
+        }
+        instruction_builder.visit_load(0); // a
+        instruction_builder.visit_add();
+        instruction_builder.visit_invoke("mul", 1);
+        instruction_builder.visit_return();
+        instruction_builder.visit_invoke("add", 1);
+    }
     instruction_builder.visit_dump();
     instruction_builder.visit_return();
     
@@ -25,12 +31,14 @@ fn main() {
      * This section of code equivalents to the following py code
      * 
      * ```py
-     * def add(x, y):
+     * a = 10
+     * 
+     * def add(x):
      *     def mul(z):
      *         return z * 90
-     *     return mul(x + y)
+     *     return mul(x + a)
      * 
-     * add(10, 10)
+     * add(10)
      * ```
      */
 
