@@ -6,6 +6,9 @@
 - ***Bytecode: Easy to emit!*** \
 It self has a embedded bytecode manipulation module!
 
+- ***Python-alike mechanic!*** \
+You can declare nested functions!
+
 > Still working on it zzz....
 
 ### Contribution
